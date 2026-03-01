@@ -67,9 +67,8 @@ export function DashboardView() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[480px]">
-        {/* Left Column - Hero & Prayer */}
+        {/* Left Column - Hero Carousel with Scrolled Dots */}
         <div className="md:col-span-4 flex flex-col gap-6 h-full">
-          {/* Main Hero Widget with Scrolled Dots */}
           <div 
             className="glass-panel rounded-[2.5rem] relative group overflow-hidden flex flex-col w-full shadow-2xl h-1/2 focusable outline-none"
             tabIndex={0}
@@ -92,17 +91,15 @@ export function DashboardView() {
               </CarouselContent>
             </Carousel>
 
-            {/* Scrolled Dots Implementation - Inspired by Reference */}
-            <div 
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20" 
-            >
+            {/* Scrolled Dots Implementation - Reference Matching */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
               {Array.from({ length: count }).map((_, i) => (
                 <div
                   key={i}
                   className={cn(
                     "h-1 rounded-full transition-all duration-500",
                     current === i 
-                      ? "w-6 bg-primary shadow-[0_0_10px_hsl(var(--primary))]" 
+                      ? "w-6 bg-primary shadow-[0_0_8px_hsl(var(--primary))]" 
                       : "w-1 bg-white/20"
                   )}
                 />

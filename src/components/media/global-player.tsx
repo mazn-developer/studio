@@ -2,7 +2,7 @@
 "use client";
 
 import { useMediaStore } from "@/lib/store";
-import { X, Youtube as YoutubeIcon, Minimize2, Bookmark, Monitor, ChevronDown, Play, Pause, Activity } from "lucide-react";
+import { X, Minimize2, Bookmark, Monitor, ChevronDown, Play, Pause, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
@@ -144,16 +144,16 @@ export function GlobalVideoPlayer() {
   return (
     <div 
       className={cn(
-        "fixed z-[9999] transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] left-0 right-0 mx-auto",
+        "fixed z-[9999] transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] mx-auto",
         isMinimized 
-          ? "bottom-32 w-[650px] h-32 rounded-[2.5rem] liquid-glass cursor-pointer shadow-[0_40px_100px_rgba(0,0,0,0.9)]" 
+          ? "bottom-12 right-12 w-[550px] h-28 rounded-[2.5rem] liquid-glass cursor-pointer shadow-[0_40px_100px_rgba(0,0,0,0.9)] left-auto mx-0" 
           : isFullScreen
-            ? "inset-0 w-full h-full bg-black flex flex-col"
-            : "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95 shadow-[0_60px_150px_rgba(0,0,0,1)]"
+            ? "inset-0 w-full h-full bg-black flex flex-col left-0 right-0"
+            : "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95 shadow-[0_60px_150px_rgba(0,0,0,1)] right-auto"
       )}
       onClick={() => isMinimized && setIsFullScreen(true)}
     >
-      <FluidGlass scale={isMinimized ? 1.5 : 2} className="opacity-10" />
+      <FluidGlass scale={isMinimized ? 1.2 : 2} className="opacity-10" />
 
       <div className={cn(
         "absolute inset-0 transition-all duration-700 overflow-hidden rounded-[inherit]",
@@ -163,41 +163,40 @@ export function GlobalVideoPlayer() {
       </div>
 
       {isMinimized && activeVideo && (
-        <div className="h-full w-full flex items-center justify-between px-10 animate-in fade-in zoom-in-95 duration-700 relative z-10">
-          <div className="flex items-center gap-6 flex-1 min-w-0">
-            <div className="relative w-28 h-20 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 border-2 border-white/30">
+        <div className="h-full w-full flex items-center justify-between px-8 animate-in fade-in zoom-in-95 duration-700 relative z-10">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <div className="relative w-24 h-16 rounded-xl overflow-hidden shadow-2xl flex-shrink-0 border border-white/20">
               <Image src={activeVideo.thumbnail} alt="" fill className="object-cover" />
               {isPlaying && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <Activity className="w-8 h-8 text-accent animate-pulse" />
+                  <Activity className="w-6 h-6 text-accent animate-pulse" />
                 </div>
               )}
             </div>
             <div className="flex flex-col min-w-0 text-right">
-              <h4 className="text-xl font-black text-white truncate uppercase tracking-tighter font-headline leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,1)]">
+              <h4 className="text-lg font-black text-white truncate uppercase tracking-tighter leading-tight drop-shadow-lg">
                 {activeVideo.title}
               </h4>
-              <span className="text-[12px] text-accent font-black uppercase tracking-[0.4em] mt-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                {activeVideo.channelTitle || "إرسال نشط"}
+              <span className="text-[10px] text-accent font-black uppercase tracking-[0.3em] mt-0.5">
+                {activeVideo.channelTitle || "Direct Stream"}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-6 shrink-0">
+          <div className="flex items-center gap-4 shrink-0">
             <button 
               onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }}
-              className="w-16 h-16 rounded-full bg-white/15 text-white hover:bg-white/30 focusable border-2 border-white/20 flex items-center justify-center outline-none"
+              className="w-12 h-12 rounded-full bg-white/10 text-white hover:bg-white/20 focusable border border-white/20 flex items-center justify-center outline-none"
               tabIndex={0}
             >
-              {isPlaying ? <Pause className="w-10 h-10 fill-current" /> : <Play className="w-10 h-10 fill-current ml-1" />}
+              {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-0.5" />}
             </button>
-            <div className="w-px h-12 bg-white/30" />
             <button 
               onClick={(e) => { e.stopPropagation(); saveCurrentProgress(); setActiveVideo(null); }}
-              className="w-14 h-14 rounded-full bg-red-600/40 text-red-500 hover:bg-red-600 hover:text-white transition-all focusable border-2 border-red-600/30 flex items-center justify-center outline-none"
+              className="w-10 h-10 rounded-full bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white transition-all focusable border border-red-600/30 flex items-center justify-center outline-none"
               tabIndex={0}
             >
-              <X className="w-8 h-8" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>

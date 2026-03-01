@@ -82,6 +82,7 @@ export function PrayerCountdownCard() {
   );
 
   const isIqamah = prayerStatus.type === "iqamah";
+  const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
   return (
     <div className={cn(
@@ -99,11 +100,12 @@ export function PrayerCountdownCard() {
         </>
       )}
 
-      {!isIqamah && (
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-50" />
-      )}
+      {/* Prominent Clock Layer - Background Accent */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 opacity-20 pointer-events-none">
+        <span className="text-6xl font-black text-white/40 tracking-tighter tabular-nums">{timeString}</span>
+      </div>
 
-      <div className="flex items-center gap-2 mb-3 relative z-10">
+      <div className="flex items-center gap-2 mb-3 relative z-10 mt-8">
         <div className={cn(
           "px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border-2 flex items-center gap-2 transition-all duration-700",
           isIqamah 
@@ -116,7 +118,7 @@ export function PrayerCountdownCard() {
       </div>
 
       <div className={cn(
-        "text-3xl font-black tracking-tighter drop-shadow-[0_10px_40px_rgba(0,0,0,0.9)] font-mono relative z-10 tabular-nums",
+        "text-5xl font-black tracking-tighter drop-shadow-[0_10px_40px_rgba(0,0,0,0.9)] font-mono relative z-10 tabular-nums",
         isIqamah ? "text-white scale-105 transition-transform duration-1000" : "text-white"
       )}>
         {prayerStatus.remaining}

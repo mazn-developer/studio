@@ -64,21 +64,21 @@ export function MapWidget() {
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera();
       
-      // High intensity lighting for maximum visibility
+      // High intensity lighting based on reference
       scene.add(new THREE.AmbientLight(0xffffff, 5.5));
-      const light1 = new THREE.DirectionalLight(0xffffff, 4.4);
-      light1.position.set(10, 25, 10); 
-      scene.add(light1);
+      const sun = new THREE.DirectionalLight(0xffffff, 4.4);
+      sun.position.set(10, 25, 10); 
+      scene.add(sun);
 
       const loader = new GLTFLoader();
-      // Corrected Path: Path from public folder
+      // Load local model from public/ES350E folder
       loader.load('ES350E/ES350E.gltf', (gltf) => {
         const carModel = gltf.scene;
         carModelRef.current = carModel;
         
         carModel.traverse((node: any) => {
           if (node.isMesh && node.material) {
-            // Material Fixes for proper 3D rendering
+            // Reference logic: Apply emissive and fix transparency/side
             node.material.emissive = node.material.color.clone().multiplyScalar(0.2); 
             node.material.metalness = 0.4;
             node.material.roughness = 0.5;

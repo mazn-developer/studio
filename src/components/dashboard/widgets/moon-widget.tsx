@@ -117,7 +117,7 @@ export function MoonWidget() {
           </div>
           <div className="space-y-0">
             <h3 className="text-4xl font-black text-white leading-none drop-shadow-2xl">
-              {loading ? "0%" : `${Math.round(moonData?.illumination || 0)}%`}
+              {loading ? "--%" : `${Math.round(moonData?.illumination || 0)}%`}
             </h3>
             <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest mt-1">Illumination</p>
           </div>
