@@ -71,7 +71,7 @@ export function MapWidget() {
       scene.add(sun);
 
       const loader = new GLTFLoader();
-      // Load local model from public/ES350E folder
+      // Load local model ES350E/ES350E.gltf
       loader.load('ES350E/ES350E.gltf', (gltf) => {
         const carModel = gltf.scene;
         carModelRef.current = carModel;

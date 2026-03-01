@@ -110,7 +110,7 @@ export const useMediaStore = create<MediaState>()(
       isPlaying: false,
       isMinimized: false,
       isFullScreen: false,
-      dockSide: 'right', // Set to Right by default as requested in final flow
+      dockSide: 'left', // Set to LEFT as default based on visual screenshot preference
 
       addChannel: (channel) => {
         set((state) => {
@@ -273,7 +273,7 @@ export const useMediaStore = create<MediaState>()(
       toggleDockSide: () => set((state) => ({ dockSide: state.dockSide === 'left' ? 'right' : 'left' })),
     }),
     {
-      name: "drivecast-jsonbin-sync",
+      name: "drivecast-jsonbin-sync-v2",
       partialize: (state) => ({ 
         favoriteChannels: state.favoriteChannels,
         savedVideos: state.savedVideos,

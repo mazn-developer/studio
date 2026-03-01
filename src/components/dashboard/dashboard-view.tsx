@@ -55,7 +55,8 @@ export function DashboardView() {
   const starredChannels = favoriteChannels.filter(c => c.starred);
 
   return (
-    <div className="h-full w-full p-6 flex flex-col gap-6 relative overflow-y-auto pb-32 no-scrollbar">
+    <div className="h-full w-full p-6 flex flex-col gap-8 relative overflow-y-auto pb-32 no-scrollbar">
+      {/* Lexus Logo - Top Center Floating */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[50] opacity-80 pointer-events-none">
         <Image 
           src="https://dmusera.netlify.app/Lexus-Logo.wine.svg" 
@@ -66,53 +67,18 @@ export function DashboardView() {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 h-[480px]">
-        {/* Left Column - Hero Carousel with Scrolled Dots */}
-        <div className="md:col-span-4 flex flex-col gap-6 h-full">
-          <div 
-            className="glass-panel rounded-[2.5rem] relative group overflow-hidden flex flex-col w-full shadow-2xl h-1/2 focusable outline-none"
-            tabIndex={0}
-            data-nav-id="widget-carousel-hero"
-          >
-            <Carousel setApi={setApi} opts={{ loop: true }} className="flex-1 w-full h-full overflow-hidden">
-              <CarouselContent className="h-full ml-0">
-                <CarouselItem className="h-full pl-0 flex items-center justify-center">
-                  <DateAndClockWidget />
-                </CarouselItem>
-                <CarouselItem className="h-full pl-0 flex items-center justify-center">
-                  <MoonWidget />
-                </CarouselItem>
-                <CarouselItem className="h-full pl-0 flex items-center justify-center">
-                  <WeatherWidget />
-                </CarouselItem>
-                <CarouselItem className="h-full pl-0 flex items-center justify-center">
-                  <PlayingNowWidget />
-                </CarouselItem>
-              </CarouselContent>
-            </Carousel>
-
-            {/* Scrolled Dots Implementation - Reference Matching */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
-              {Array.from({ length: count }).map((_, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "h-1 rounded-full transition-all duration-500",
-                    current === i 
-                      ? "w-6 bg-primary shadow-[0_0_8px_hsl(var(--primary))]" 
-                      : "w-1 bg-white/20"
-                  )}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="h-1/2 w-full focusable outline-none rounded-[2.5rem]" tabIndex={0} data-nav-id="widget-prayer-countdown">
-            <PrayerCountdownCard />
-          </div>
+      {/* Main Top Grid: Map (Left), Car (Middle), Carousel (Right) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[520px]">
+        {/* Left Column - Map (Visual priority for driving) */}
+        <div 
+          className="md:col-span-4 glass-panel rounded-[2.5rem] overflow-hidden relative group shadow-2xl h-full focusable outline-none"
+          tabIndex={0}
+          data-nav-id="widget-map"
+        >
+          <MapWidget />
         </div>
 
-        {/* Middle Column - Car Image */}
+        {/* Middle Column - Car Image (Centerpiece) */}
         <div 
           className="md:col-span-4 glass-panel rounded-[2.5rem] relative group flex flex-col items-center justify-center overflow-hidden h-full shadow-2xl focusable outline-none"
           tabIndex={0}
@@ -137,25 +103,64 @@ export function DashboardView() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
         </div>
 
-        {/* Right Column - Map */}
-        <div 
-          className="md:col-span-4 glass-panel rounded-[2.5rem] overflow-hidden relative group shadow-2xl h-full focusable outline-none"
-          tabIndex={0}
-          data-nav-id="widget-map"
-        >
-          <MapWidget />
+        {/* Right Column - Hero Carousel & Prayer Countdown */}
+        <div className="md:col-span-4 flex flex-col gap-6 h-full">
+          {/* SCROLLED DOT CARD Implementation */}
+          <div 
+            className="glass-panel rounded-[2.5rem] relative group overflow-hidden flex flex-col w-full shadow-2xl h-1/2 focusable outline-none"
+            tabIndex={0}
+            data-nav-id="widget-carousel-hero"
+          >
+            <Carousel setApi={setApi} opts={{ loop: true }} className="flex-1 w-full h-full overflow-hidden">
+              <CarouselContent className="h-full ml-0">
+                <CarouselItem className="h-full pl-0 flex items-center justify-center">
+                  <DateAndClockWidget />
+                </CarouselItem>
+                <CarouselItem className="h-full pl-0 flex items-center justify-center">
+                  <MoonWidget />
+                </CarouselItem>
+                <CarouselItem className="h-full pl-0 flex items-center justify-center">
+                  <WeatherWidget />
+                </CarouselItem>
+                <CarouselItem className="h-full pl-0 flex items-center justify-center">
+                  <PlayingNowWidget />
+                </CarouselItem>
+              </CarouselContent>
+            </Carousel>
+
+            {/* Scrolled Dots - Visual Reference Matching */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+              {Array.from({ length: count }).map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-1 rounded-full transition-all duration-500",
+                    current === i 
+                      ? "w-6 bg-primary shadow-[0_0_8px_hsl(var(--primary))]" 
+                      : "w-1 bg-white/20"
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="h-1/2 w-full focusable outline-none rounded-[2.5rem] overflow-hidden" tabIndex={0} data-nav-id="widget-prayer-countdown">
+            <PrayerCountdownCard />
+          </div>
         </div>
       </div>
 
+      {/* Prayer Timeline - Separated to avoid overlapping */}
       <div 
-        className="w-full glass-panel rounded-full p-4 shadow-xl transform scale-[0.8] mt-4 mb-[-2rem] origin-center focusable outline-none"
+        className="w-full glass-panel rounded-full p-4 shadow-xl transform scale-[0.9] origin-center focusable outline-none"
         tabIndex={0}
         data-nav-id="widget-prayer-timeline"
       >
         <PrayerTimelineWidget />
       </div>
 
-      <div className="w-full space-y-6">
+      {/* Bottom Content Area */}
+      <div className="w-full space-y-8">
         <LatestVideosWidget channels={starredChannels} />
         <YouTubeSavedWidget />
       </div>

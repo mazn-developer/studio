@@ -20,7 +20,6 @@ export function MoonWidget() {
   const [error, setError] = useState(false);
   const [rotation, setRotation] = useState(0);
 
-  // المنطق الحاسم لجلب تاريخ NASA SVS بناءً على وقت التحديث 18:00
   function getNasaDateTime(date: Date) {
     const hours = date.getHours();
     let targetDate = new Date(date);
