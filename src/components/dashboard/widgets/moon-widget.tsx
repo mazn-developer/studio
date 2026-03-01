@@ -20,14 +20,22 @@ export function MoonWidget() {
   const [error, setError] = useState(false);
   const [rotation, setRotation] = useState(0);
 
+  // المنطق الحاسم لجلب تاريخ NASA SVS
+  function getNasaDateTime(date: Date) {
+    const hours = date.getHours();
+    let targetDate = new Date(date);
+    if (hours < 18) {
+      targetDate.setDate(targetDate.getDate() - 1);
+    }
+    const year = targetDate.getFullYear();
+    const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
+    const day = targetDate.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}T18:00`;
+  }
+
   useEffect(() => {
     async function fetchMoonData() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = (now.getMonth() + 1).toString().padStart(2, '0');
-      const day = now.getDate().toString().padStart(2, '0');
-      const nasaDateString = `${year}-${month}-${day}T18:00`;
-
+      const nasaDateString = getNasaDateTime(new Date());
       try {
         setLoading(true);
         const response = await fetch(`https://svs.gsfc.nasa.gov/api/dialamoon/${nasaDateString}`);
@@ -51,7 +59,7 @@ export function MoonWidget() {
     return () => clearInterval(rotTimer);
   }, []);
 
-  const hijriDay = "١١"; // Example fallback
+  const hijriDay = "١١"; // Fallback for now
 
   return (
     <div className="h-full w-full bg-black rounded-[2.5rem] border border-white/5 overflow-hidden relative group shadow-2xl flex flex-col items-center justify-center">
@@ -79,13 +87,14 @@ export function MoonWidget() {
             </div>
           ) : (
             <div className="relative w-32 h-32 mx-auto">
+              {/* Hijri Moon Overlay */}
               <div id="hijri-moon-overlay" 
                 className="absolute inset-0 flex items-center justify-center z-20 font-black text-6xl opacity-30 pointer-events-none"
                 style={{ WebkitTextStroke: '1.5px rgba(255,255,255,0.7)', textShadow: '0 4px 10px rgba(0,0,0,0.5)', transform: 'scale(3.5)' }}
               >
                 {hijriDay}
               </div>
-              <div className="relative w-full h-full rounded-full overflow-hidden ring-[8px] ring-white/5 shadow-[0_0_60px_rgba(147,51,234,0.3)] bg-black">
+              <div className="relative w-full h-full rounded-full overflow-hidden ring-[8px] ring-white/5 shadow-[0_0_60px_rgba(59,130,246,0.3)] bg-black">
                 {moonData?.image?.url && (
                   <Image
                     src={moonData.image.url}

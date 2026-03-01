@@ -8,7 +8,7 @@ export function WeatherWidget() {
   const [weather, setWeather] = useState<any>(null);
 
   useEffect(() => {
-    fetch(`https://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=Salalah&aqi=no`)
+    fetch(`https://api.weatherapi.com/v1/forecast.json?key=${WEATHER_API_KEY}&q=Salalah&days=1&aqi=no&lang=ar`)
       .then(res => res.json())
       .then(data => {
         if (data && data.current) setWeather(data);
@@ -31,7 +31,7 @@ export function WeatherWidget() {
           {Math.round(weather.current.temp_c)}°
         </span>
         <div className="mt-2 flex items-center gap-3 bg-white/5 px-6 py-2 rounded-full border border-white/10 backdrop-blur-md shadow-2xl">
-           <img src={weather.current.condition.icon} alt="Weather" className="w-12 h-12 object-contain" />
+           <img src={`https:${weather.current.condition.icon}`} alt="Weather" className="w-12 h-12 object-contain" />
            <span className="text-[13px] font-black text-white/80 uppercase tracking-widest">{weather.current.condition.text}</span>
         </div>
       </div>
