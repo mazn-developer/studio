@@ -104,7 +104,7 @@ export const useMediaStore = create<MediaState>()(
       belledMatchIds: [],
       prayerTimes: prayerTimesData,
       reminders: [],
-      mapSettings: { zoom: 19.5, tilt: 65, carScale: 1.02, backgroundIndex: 0 },
+      mapSettings: { zoom: 19.5, tilt: 65, carScale: 1.05, backgroundIndex: 0 },
       aiSuggestions: [],
       activeVideo: null,
       isPlaying: false,
