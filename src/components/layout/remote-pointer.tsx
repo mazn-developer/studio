@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useCallback, useState } from "react";
@@ -13,14 +14,15 @@ export function RemotePointer() {
   const [isVisible, setIsVisible] = useState(false);
   const [isVirtualCursorEnabled, setIsVirtualCursorEnabled] = useState(false);
 
-  // إجبار وضع التنقل (Navigation Mode) عبر وسوم الميتا
+  // إجبار وضع التنقل (Navigation Mode) عبر وسوم الميتا لإخفاء مؤشر VIDAA
   useEffect(() => {
-    const metaIds = ['vidaa-cursor-meta', 'vidaa-mode-meta'];
+    const metaIds = ['vidaa-cursor-meta', 'vidaa-mode-meta', 'smart-nav-meta'];
     
     if (!isVirtualCursorEnabled) {
       const metaTags = [
         { name: 'cursor', content: 'disabled' },
-        { name: 'cursor-mode', content: 'navigation' }
+        { name: 'cursor-mode', content: 'navigation' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' }
       ];
 
       metaTags.forEach((tag, idx) => {
@@ -44,11 +46,11 @@ export function RemotePointer() {
   }, [isVirtualCursorEnabled]);
 
   const updatePointer = useCallback((el: HTMLElement) => {
-    // جعل المؤشر البصري يتبع العنصر عبر تمركزه في الشاشة
+    // جعل الشاشة تتبع العنصر المحدد لضمان بقائه في بؤرة الرؤية (إخفاء الماوس الوهمي)
     el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
   }, []);
 
-  // ضمان وجود تركيز نشط دائماً (Sticky Focus Guard)
+  // حارس التركيز الدائم (Sticky Focus Guard)
   const ensureFocus = useCallback(() => {
     const active = document.activeElement;
     const isFocusable = active && active.classList.contains("focusable");
@@ -56,11 +58,12 @@ export function RemotePointer() {
     if (!isFocusable || active === document.body) {
       const allFocusables = Array.from(document.querySelectorAll(".focusable")) as HTMLElement[];
       if (allFocusables.length > 0) {
-        // ترتيب الأولويات: عناصر الدوك أولاً لسهولة البداية
-        const dockHome = document.querySelector('[data-nav-id="dock-Home"]') as HTMLElement;
-        if (dockHome) {
-          dockHome.focus();
-          updatePointer(dockHome);
+        // الأولوية لأيقونة الميديا أو الرئيسية لإجبار المتصفح على إخفاء الفأرة
+        const dockTarget = document.querySelector('[data-nav-id="dock-Home"]') as HTMLElement || 
+                           document.querySelector('[data-nav-id="dock-Media"]') as HTMLElement;
+        if (dockTarget) {
+          dockTarget.focus();
+          updatePointer(dockTarget);
         } else {
           allFocusables[0].focus();
           updatePointer(allFocusables[0]);
@@ -69,7 +72,7 @@ export function RemotePointer() {
     }
   }, [updatePointer]);
 
-  // خوارزمية حساب المسافة لـ Spatial Navigation
+  // خوارزمية حساب المسافة لـ Spatial Navigation (محرك الأسهم)
   const getDistance = (rect1: DOMRect, rect2: DOMRect, direction: string) => {
     const p1 = { x: rect1.left + rect1.width / 2, y: rect1.top + rect1.height / 2 };
     const p2 = { x: rect2.left + rect2.width / 2, y: rect2.top + rect2.height / 2 };
@@ -129,10 +132,11 @@ export function RemotePointer() {
   useEffect(() => {
     ensureFocus();
     
-    // فحص دوري للتأكد من وجود تركيز (للتغلب على تحديثات الـ DOM المفاجئة)
+    // فحص دوري للتأكد من وجود تركيز نشط دائماً لإخفاء مؤشر VIDAA
     const focusInterval = setInterval(ensureFocus, 2000);
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // مفتاح '1' لتبديل المؤشر الوهمي يدوياً عند الضرورة
       if (e.key === "1") {
         e.preventDefault();
         setIsVirtualCursorEnabled(prev => {

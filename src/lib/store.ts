@@ -1,3 +1,4 @@
+
 "use client";
 
 import { create } from "zustand";
@@ -109,7 +110,7 @@ export const useMediaStore = create<MediaState>()(
       isPlaying: false,
       isMinimized: false,
       isFullScreen: false,
-      dockSide: 'left', 
+      dockSide: 'right', // شريط المهام في اليمين كوضع افتراضي
 
       addChannel: (channel) => {
         set((state) => {

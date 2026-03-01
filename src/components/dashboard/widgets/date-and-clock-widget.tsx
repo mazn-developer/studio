@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -63,7 +64,7 @@ export function DateAndClockWidget() {
     </div>
   );
 
-  const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
   const dayName = now.toLocaleDateString('ar-EG', { weekday: 'long' });
   const dayNum = now.getDate();
   const monthName = now.toLocaleDateString('ar-EG', { month: 'long' });
@@ -82,14 +83,14 @@ export function DateAndClockWidget() {
       </div>
 
       <div className="relative z-10 flex flex-col items-center w-full max-w-[90%] gap-4">
-        {/* Main Hero Element: The Clock - Enhanced for Prominence */}
+        {/* Main Hero Element: The Clock - Maximum Prominence */}
         <div className="flex flex-col items-center text-center">
-          <div className="text-8xl font-black text-white tracking-tighter drop-shadow-[0_20px_60px_rgba(0,0,0,1)] leading-none mb-4 animate-in fade-in zoom-in-95 duration-1000">
+          <div className="text-9xl font-black text-white tracking-tighter drop-shadow-[0_30px_80px_rgba(0,0,0,1)] leading-none mb-4 animate-in fade-in zoom-in-95 duration-1000">
             {timeString}
           </div>
-          <div className="flex items-center gap-2 bg-white/5 px-6 py-2 rounded-full border border-white/10 backdrop-blur-3xl shadow-2xl">
-            <Calendar className="w-4 h-4 text-accent" />
-            <span className="text-[13px] text-white/90 font-black uppercase tracking-[0.25em]">{dayName} {dayNum} {monthName}</span>
+          <div className="flex items-center gap-2 bg-white/5 px-8 py-3 rounded-full border border-white/10 backdrop-blur-3xl shadow-2xl">
+            <Calendar className="w-5 h-5 text-accent" />
+            <span className="text-[15px] text-white/90 font-black uppercase tracking-[0.3em]">{dayName} {dayNum} {monthName}</span>
           </div>
         </div>
         
