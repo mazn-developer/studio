@@ -69,7 +69,7 @@ export function DashboardView() {
 
       {/* Main Top Grid: Map (Left), Car (Middle), Carousel (Right) */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[520px]">
-        {/* Left Column - Map (Visual priority for driving) */}
+        {/* Left Column - Map */}
         <div 
           className="md:col-span-4 glass-panel rounded-[2.5rem] overflow-hidden relative group shadow-2xl h-full focusable outline-none"
           tabIndex={0}
@@ -78,7 +78,7 @@ export function DashboardView() {
           <MapWidget />
         </div>
 
-        {/* Middle Column - Car Image (Centerpiece) */}
+        {/* Middle Column - Car Image */}
         <div 
           className="md:col-span-4 glass-panel rounded-[2.5rem] relative group flex flex-col items-center justify-center overflow-hidden h-full shadow-2xl focusable outline-none"
           tabIndex={0}
@@ -86,8 +86,8 @@ export function DashboardView() {
         >
           <div className="absolute inset-0 w-full h-full">
             <Image 
-              src="https://dmusera.netlify.app/es350gb.png" 
-              alt="Lexus ES350" 
+              src="https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=1000" 
+              alt="Lexus ES" 
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-1000 brightness-75 group-hover:brightness-100"
             />
@@ -103,9 +103,8 @@ export function DashboardView() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
         </div>
 
-        {/* Right Column - Hero Carousel & Prayer Countdown */}
+        {/* Right Column - Hero Carousel */}
         <div className="md:col-span-4 flex flex-col gap-6 h-full">
-          {/* SCROLLED DOT CARD Implementation */}
           <div 
             className="glass-panel rounded-[2.5rem] relative group overflow-hidden flex flex-col w-full shadow-2xl h-1/2 focusable outline-none"
             tabIndex={0}
@@ -113,11 +112,12 @@ export function DashboardView() {
           >
             <Carousel setApi={setApi} opts={{ loop: true }} className="flex-1 w-full h-full overflow-hidden">
               <CarouselContent className="h-full ml-0">
-                <CarouselItem className="h-full pl-0 flex items-center justify-center">
-                  <DateAndClockWidget />
-                </CarouselItem>
+                {/* NASA MOON FIRST ELEMENT */}
                 <CarouselItem className="h-full pl-0 flex items-center justify-center">
                   <MoonWidget />
+                </CarouselItem>
+                <CarouselItem className="h-full pl-0 flex items-center justify-center">
+                  <DateAndClockWidget />
                 </CarouselItem>
                 <CarouselItem className="h-full pl-0 flex items-center justify-center">
                   <WeatherWidget />
@@ -128,7 +128,7 @@ export function DashboardView() {
               </CarouselContent>
             </Carousel>
 
-            {/* Scrolled Dots - Visual Reference Matching */}
+            {/* Scrolled Dots */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
               {Array.from({ length: count }).map((_, i) => (
                 <div
@@ -144,13 +144,13 @@ export function DashboardView() {
             </div>
           </div>
 
-          <div className="h-1/2 w-full focusable outline-none rounded-[2.5rem] overflow-hidden" tabIndex={0} data-nav-id="widget-prayer-countdown">
+          <div className="h-[160px] w-full focusable outline-none rounded-[2.5rem] overflow-hidden" tabIndex={0} data-nav-id="widget-prayer-countdown">
             <PrayerCountdownCard />
           </div>
         </div>
       </div>
 
-      {/* Prayer Timeline - Separated to avoid overlapping */}
+      {/* Prayer Timeline */}
       <div 
         className="w-full glass-panel rounded-full p-4 shadow-xl transform scale-[0.9] origin-center focusable outline-none"
         tabIndex={0}

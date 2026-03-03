@@ -1,10 +1,11 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { CardContent } from "@/components/ui/card";
-import { Loader2, Moon as MoonIcon, AlertCircle } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Moon as MoonIcon, Star, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 interface MoonData {
   image: {
@@ -12,53 +13,76 @@ interface MoonData {
   };
   phase: string | number;
   illumination: number;
+  distance: number;
+  age: number;
 }
 
 export function MoonWidget() {
   const [moonData, setMoonData] = useState<MoonData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [rotation, setRotation] = useState(0);
-
-  function getNasaDateTime(date: Date) {
-    const hours = date.getHours();
-    let targetDate = new Date(date);
-    if (hours < 18) {
-      targetDate.setDate(targetDate.getDate() - 1);
-    }
-    const year = targetDate.getFullYear();
-    const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
-    const day = targetDate.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}T18:00`;
-  }
+  const [infoIndex, setInfoIndex] = useState(0);
 
   useEffect(() => {
     async function fetchMoonData() {
-      const nasaDateString = getNasaDateTime(new Date());
+      const now = new Date();
+      const hours = now.getHours();
+      let targetDate = new Date(now);
+
+      // NASA logic: If before 18:00, use previous day's data for stability
+      if (hours < 18) {
+        targetDate.setDate(targetDate.getDate() - 1);
+      }
+
+      const year = targetDate.getFullYear();
+      const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
+      const day = targetDate.getDate().toString().padStart(2, '0');
+      const nasaDateString = `${year}-${month}-${day}T18:00`;
+
       try {
-        setLoading(true);
         const response = await fetch(`https://svs.gsfc.nasa.gov/api/dialamoon/${nasaDateString}`);
         if (!response.ok) throw new Error("NASA API failed");
         const data = await response.json();
-        
-        setMoonData({
-          ...data,
-          illumination: parseFloat(data.illumination) || 0
-        });
-        setError(false);
+        setMoonData(data);
       } catch (error) {
-        setError(true);
+        console.error("Failed to fetch NASA moon data:", error);
       } finally {
         setLoading(false);
       }
     }
 
     fetchMoonData();
-    const rotTimer = setInterval(() => setRotation(prev => (prev + 0.05) % 360), 100);
-    return () => clearInterval(rotTimer);
+
+    const rotTimer = setInterval(() => {
+      setRotation(prev => (prev + 0.05) % 360);
+    }, 100);
+
+    const infoTimer = setInterval(() => {
+      setInfoIndex((prev) => (prev + 1) % 3);
+    }, 4000);
+
+    return () => {
+      clearInterval(rotTimer);
+      clearInterval(infoTimer);
+    };
   }, []);
 
-  const hijriDay = "١١"; 
+  const currentInfo = useMemo(() => {
+    if (!moonData) return { label: "Syncing", value: "NASA SVS" };
+    
+    const formattedPhase = typeof moonData.phase === 'string' 
+      ? moonData.phase.replace(/-/g, ' ') 
+      : String(moonData.phase || "Loading...");
+
+    const infos = [
+      { label: "Illumination", value: `${Math.round(moonData.illumination || 0)}%` },
+      { label: "Distance", value: `${(moonData.distance || 0).toLocaleString()} KM` },
+      { label: "Current Phase", value: formattedPhase },
+    ];
+    return infos[infoIndex];
+  }, [moonData, infoIndex]);
+
+  const hijriDay = "١١";
 
   return (
     <div className="h-full w-full bg-black rounded-[2.5rem] border border-white/5 overflow-hidden relative group shadow-2xl flex flex-col items-center justify-center">
@@ -78,11 +102,6 @@ export function MoonWidget() {
           {loading ? (
             <div className="w-32 h-32 rounded-full bg-white/5 flex items-center justify-center border border-white/10 mx-auto">
               <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-            </div>
-          ) : error ? (
-            <div className="w-32 h-32 rounded-full bg-zinc-900 flex flex-col items-center justify-center border border-red-500/20 mx-auto">
-              <AlertCircle className="w-6 h-6 text-red-500/50 mb-2" />
-              <span className="text-[8px] text-white/40 font-bold uppercase tracking-widest">Offline</span>
             </div>
           ) : (
             <div className="relative w-32 h-32 mx-auto">
@@ -114,14 +133,24 @@ export function MoonWidget() {
             <MoonIcon className="w-3 h-3 text-blue-400" />
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400/80">NASA LIVE FEED</span>
           </div>
-          <div className="space-y-0">
-            <h3 className="text-4xl font-black text-white leading-none drop-shadow-2xl">
-              {loading ? "--%" : `${Math.round(moonData?.illumination || 0)}%`}
+          
+          <div className="space-y-0 h-12 flex flex-col justify-center">
+            <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest mb-1">{currentInfo.label}</p>
+            <h3 className="text-2xl font-black text-white leading-none drop-shadow-2xl capitalize">
+              {currentInfo.value}
             </h3>
-            <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest mt-1">Illumination</p>
           </div>
-          <div className="mt-2 text-primary/80 font-black uppercase tracking-[0.2em] text-[8px] bg-white/5 px-3 py-1 rounded-full border border-white/5">
-            {moonData ? String(moonData.phase).replace(/-/g, ' ') : "Scanning Orbit..."}
+
+          <div className="flex gap-1 mt-2">
+            {[0, 1, 2].map((i) => (
+              <div 
+                key={i} 
+                className={cn(
+                  "h-1 rounded-full transition-all duration-500",
+                  infoIndex === i ? "bg-blue-400 w-4" : "bg-white/10 w-1"
+                )} 
+              />
+            ))}
           </div>
         </div>
       </CardContent>

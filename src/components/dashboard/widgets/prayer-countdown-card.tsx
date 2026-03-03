@@ -100,14 +100,14 @@ export function PrayerCountdownCard() {
         </>
       )}
 
-      {/* Prominent Clock Layer - Background Accent */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 opacity-20 pointer-events-none">
-        <span className="text-6xl font-black text-white/40 tracking-tighter tabular-nums">{timeString}</span>
+      {/* Prominent Clock Layer - High Opacity Background */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 opacity-60 pointer-events-none">
+        <span className="text-[11rem] font-black text-white tracking-tighter tabular-nums leading-none">{timeString}</span>
       </div>
 
-      <div className="flex items-center gap-2 mb-3 relative z-10 mt-8">
+      <div className="flex items-center gap-2 mb-1 relative z-10 mt-2">
         <div className={cn(
-          "px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border-2 flex items-center gap-2 transition-all duration-700",
+          "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border-2 flex items-center gap-2 transition-all duration-700",
           isIqamah 
             ? "bg-accent text-black border-white/60 shadow-[0_0_40px_rgba(16,185,129,1)]" 
             : "bg-primary/20 text-primary border-primary/40 shadow-glow"
@@ -118,15 +118,15 @@ export function PrayerCountdownCard() {
       </div>
 
       <div className={cn(
-        "text-5xl font-black tracking-tighter drop-shadow-[0_10px_40px_rgba(0,0,0,0.9)] font-mono relative z-10 tabular-nums",
+        "text-6xl font-black tracking-tighter drop-shadow-[0_10px_40px_rgba(0,0,0,0.9)] font-mono relative z-10 tabular-nums",
         isIqamah ? "text-white scale-105 transition-transform duration-1000" : "text-white"
       )}>
         {prayerStatus.remaining}
       </div>
 
-      <div className="mt-3 flex flex-col items-center gap-2 relative z-10">
+      <div className="mt-2 flex flex-col items-center gap-2 relative z-10">
         <div className={cn(
-          "flex items-center gap-2 font-black text-[8px] uppercase tracking-[0.2em]",
+          "flex items-center gap-2 font-black text-[9px] uppercase tracking-[0.2em]",
           isIqamah ? "text-black bg-white px-3 py-1 rounded-full shadow-[0_0_40px_white]" : "text-white/40"
         )}>
           <Timer className={cn("w-3 h-3", isIqamah ? "text-accent animate-pulse" : "text-primary")} />
