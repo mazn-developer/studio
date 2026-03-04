@@ -13,15 +13,11 @@ import { LatestVideosWidget } from "./widgets/latest-videos-widget";
 import { YouTubeSavedWidget } from "./widgets/youtube-saved-widget";
 import { useMediaStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  type CarouselApi,
-} from "@/components/ui/carousel";
+import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "@/components/ui/carousel";
 
 export function DashboardView() {
-  const { favoriteChannels } = useMediaStore();
+  const { favoriteChannels, activeVideo } = useMediaStore();
+  const starredChannels = favoriteChannels.filter(c => c.starred);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
@@ -33,15 +29,11 @@ export function DashboardView() {
     api.on("select", () => {
       setCurrent(api.selectedScrollSnap());
     });
-    const interval = setInterval(() => { api.scrollNext(); }, 10000);
-    return () => clearInterval(interval);
-  }, [api]);
-
-  const starredChannels = favoriteChannels.filter(c => c.starred);
+  }, [api, activeVideo]);
 
   return (
     <div className="h-full w-full p-6 flex flex-col gap-6 relative overflow-y-auto pb-32 no-scrollbar">
-      {/* Lexus Logo */}
+      {/* Brand Header */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[50] opacity-80 pointer-events-none">
         <Image 
           src="https://dmusera.netlify.app/Lexus-Logo.wine.svg" 
@@ -53,69 +45,69 @@ export function DashboardView() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[380px]">
-        {/* Left: Map */}
-        <div className="md:col-span-4 glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl h-full focusable" tabIndex={0} data-nav-id="widget-map">
+        {/* Left: Interactive Map */}
+        <div className="md:col-span-4 glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl h-full focusable" tabIndex={0}>
           <MapWidget />
         </div>
 
-        {/* Middle: Car Image */}
-        <div className="md:col-span-4 glass-panel rounded-[2.5rem] relative group flex flex-col items-center justify-center overflow-hidden h-full shadow-2xl focusable" tabIndex={0} data-nav-id="widget-car">
-          <div className="absolute inset-0 w-full h-full p-8 flex items-center justify-center">
+        {/* Middle: Vehicle Visualizer - Image Fill Card */}
+        <div className="md:col-span-4 glass-panel rounded-[2.5rem] relative flex items-center justify-center overflow-hidden h-full shadow-2xl focusable" tabIndex={0}>
+          <div className="absolute inset-0 w-full h-full">
             <Image 
               src="https://dmusera.netlify.app/es350gb.png" 
               alt="Lexus ES" 
-              width={600}
-              height={300}
-              className="object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] transition-transform duration-1000 group-hover:scale-110"
+              fill
+              className="object-cover drop-shadow-[0_25px_60px_rgba(0,0,0,0.9)]"
             />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
         </div>
 
-        {/* Right: Hero Carousel */}
-        <div className="md:col-span-4 flex flex-col h-full">
-          <div className="glass-panel rounded-[2.5rem] relative group overflow-hidden flex flex-col w-full shadow-2xl flex-1 focusable outline-none" tabIndex={0} data-nav-id="widget-carousel-hero">
-            <Carousel setApi={setApi} opts={{ loop: true }} className="flex-1 w-full h-full overflow-hidden">
+        {/* Right: Dynamic Widget Carousel */}
+        <div className="md:col-span-4 flex flex-col gap-6 h-full relative">
+          <div className="flex-1 relative overflow-hidden focusable group bg-black/20 rounded-[2.5rem] shadow-2xl" tabIndex={0}>
+            <Carousel setApi={setApi} opts={{ loop: true }} className="w-full h-full">
               <CarouselContent className="h-full ml-0">
-                <CarouselItem className="h-full pl-0 flex items-center justify-center">
+                <CarouselItem className="pl-0 h-full flex items-center justify-center">
                   <MoonWidget />
                 </CarouselItem>
-                <CarouselItem className="h-full pl-0 flex items-center justify-center">
-                  <DateAndClockWidget />
-                </CarouselItem>
-                <CarouselItem className="h-full pl-0 flex items-center justify-center">
+                <CarouselItem className="pl-0 h-full flex items-center justify-center">
                   <WeatherWidget />
                 </CarouselItem>
-                <CarouselItem className="h-full pl-0 flex items-center justify-center">
-                  <PlayingNowWidget />
-                </CarouselItem>
+                {activeVideo && (
+                  <CarouselItem className="pl-0 h-full flex items-center justify-center">
+                    <PlayingNowWidget />
+                  </CarouselItem>
+                )}
               </CarouselContent>
             </Carousel>
 
-            {/* Scrolled Dots */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+            {/* Scrolled Dots - Capsule Style */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
               {Array.from({ length: count }).map((_, i) => (
-                <div
-                  key={i}
+                <div 
+                  key={i} 
                   className={cn(
-                    "h-1 rounded-full transition-all duration-500",
+                    "h-1.5 rounded-full transition-all duration-500",
                     current === i 
-                      ? "w-6 bg-primary shadow-[0_0_8px_hsl(var(--primary))]" 
-                      : "w-1 bg-white/20"
-                  )}
+                      ? "bg-primary w-6 shadow-[0_0_10px_#0088ff]" 
+                      : "bg-white/20 w-1.5"
+                  )} 
                 />
               ))}
             </div>
           </div>
+
+          <div className="flex-1 glass-panel rounded-[2.5rem] relative overflow-hidden shadow-2xl focusable" tabIndex={0}>
+            <DateAndClockWidget />
+          </div>
         </div>
       </div>
 
-      {/* Prayer Timeline - Always visible below the main row */}
-      <div className="w-full glass-panel rounded-[2.5rem] p-4 shadow-xl focusable outline-none" tabIndex={0} data-nav-id="widget-prayer-timeline">
+      <div className="w-full glass-panel rounded-[2.5rem] p-4 shadow-xl focusable" tabIndex={0}>
         <PrayerTimelineWidget />
       </div>
 
-      {/* Bottom Area */}
       <div className="w-full space-y-8">
         <LatestVideosWidget channels={starredChannels} />
         <YouTubeSavedWidget />

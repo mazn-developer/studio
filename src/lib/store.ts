@@ -100,7 +100,7 @@ export const useMediaStore = create<MediaState>()(
       starredChannelIds: [],
       videoProgress: {},
       favoriteTeams: [],
-      favoriteLeagueIds: [307, 39, 2],
+      favoriteLeagueIds: [307, 39, 2, 140, 135],
       belledMatchIds: [],
       prayerTimes: prayerTimesData,
       reminders: [],
@@ -110,7 +110,7 @@ export const useMediaStore = create<MediaState>()(
       isPlaying: false,
       isMinimized: false,
       isFullScreen: false,
-      dockSide: 'left', // Set to LEFT as default based on visual screenshot preference
+      dockSide: 'left',
 
       addChannel: (channel) => {
         set((state) => {
@@ -208,11 +208,12 @@ export const useMediaStore = create<MediaState>()(
       toggleFavoriteTeam: (team) => {
         set((state) => {
           const exists = state.favoriteTeams.some(t => t.id === team.id);
-          const newList = exists 
+          const newTeams = exists 
             ? state.favoriteTeams.filter(t => t.id !== team.id) 
             : [...state.favoriteTeams, team];
-          updateBin(JSONBIN_CLUBS_BIN_ID, newList);
-          return { favoriteTeams: newList };
+          
+          updateBin(JSONBIN_CLUBS_BIN_ID, { teams: newTeams, matches: state.belledMatchIds });
+          return { favoriteTeams: newTeams };
         });
       },
 
@@ -224,11 +225,14 @@ export const useMediaStore = create<MediaState>()(
       },
 
       toggleBelledMatch: (matchId) => {
-        set((state) => ({
-          belledMatchIds: state.belledMatchIds.includes(matchId)
+        set((state) => {
+          const newMatches = state.belledMatchIds.includes(matchId)
             ? state.belledMatchIds.filter(id => id !== matchId)
-            : [...state.belledMatchIds, matchId]
-        }));
+            : [...state.belledMatchIds, matchId];
+          
+          updateBin(JSONBIN_CLUBS_BIN_ID, { teams: state.favoriteTeams, matches: newMatches });
+          return { belledMatchIds: newMatches };
+        });
       },
 
       updateMapSettings: (settings) => {
@@ -273,7 +277,7 @@ export const useMediaStore = create<MediaState>()(
       toggleDockSide: () => set((state) => ({ dockSide: state.dockSide === 'left' ? 'right' : 'left' })),
     }),
     {
-      name: "drivecast-jsonbin-sync-v2",
+      name: "drivecast-jsonbin-v3",
       partialize: (state) => ({ 
         favoriteChannels: state.favoriteChannels,
         savedVideos: state.savedVideos,
@@ -306,41 +310,17 @@ if (typeof window !== "undefined") {
         }
       }
 
-      const svRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_SAVED_VIDEOS_BIN_ID}/latest`, {
-        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-      });
-      if (svRes.ok) {
-        const data = await svRes.json();
-        if (Array.isArray(data.record)) {
-          useMediaStore.setState({ savedVideos: data.record });
-          const progressMap: Record<string, number> = {};
-          data.record.forEach((v: any) => { if(v.progress) progressMap[v.id] = v.progress; });
-          useMediaStore.setState({ videoProgress: progressMap });
-        }
-      }
-
       const clRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_CLUBS_BIN_ID}/latest`, {
         headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
       });
       if (clRes.ok) {
         const data = await clRes.json();
-        if (Array.isArray(data.record)) {
-          const teams = data.record.map((item: any) => 
-            typeof item === 'number' ? { id: item, name: 'فريق محفوظ', logo: '' } : item
-          );
-          useMediaStore.setState({ favoriteTeams: teams });
-        }
-      }
-
-      const ptRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_PRAYER_TIMES_BIN_ID}/latest`, {
-        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-      });
-      if (ptRes.ok) {
-        const data = await ptRes.json();
-        if (Array.isArray(data.record)) {
-          useMediaStore.setState({ prayerTimes: data.record });
-        } else {
-          await updateBin(JSONBIN_PRAYER_TIMES_BIN_ID, prayerTimesData);
+        if (data.record && typeof data.record === 'object') {
+          if (data.record.teams) useMediaStore.setState({ favoriteTeams: data.record.teams });
+          if (data.record.matches) useMediaStore.setState({ belledMatchIds: data.record.matches });
+        } else if (Array.isArray(data.record)) {
+          // Backward compatibility
+          useMediaStore.setState({ favoriteTeams: data.record });
         }
       }
     } catch (e) {

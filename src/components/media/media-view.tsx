@@ -1,10 +1,11 @@
+
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, Plus, Radio, Loader2, Check, Mic, Users, Cloud, Star, X, Bookmark, Link as LinkIcon, BookOpen, ChevronDown } from "lucide-react";
+import { Search, Plus, Radio, Loader2, Check, Mic, Users, Cloud, Star, X, Bookmark, Link as LinkIcon, BookOpen, ChevronDown, Trash2 } from "lucide-react";
 import { useMediaStore } from "@/lib/store";
 import { searchYouTubeChannels, searchYouTubeVideos, fetchChannelVideos, fetchVideoDetails, YouTubeChannel, YouTubeVideo } from "@/lib/youtube";
 import Image from "next/image";
@@ -60,40 +61,14 @@ export function MediaView() {
   const [isSearchingChannels, setIsSearchingChannels] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // التركيز التلقائي عند التحميل: استهداف أول قناة لضمان اختفاء مؤشر VIDAA
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const firstChannel = document.querySelector('[data-nav-id="fav-channel-0"]') as HTMLElement;
-      if (firstChannel) {
-        firstChannel.focus();
-      } else {
-        const addBtn = document.querySelector('[data-nav-id="add-channel-btn"]') as HTMLElement;
-        if (addBtn) addBtn.focus();
-        else searchInputRef.current?.focus();
-      }
-    }, 600);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // التركيز التلقائي عند فتح قائمة القراء
-  useEffect(() => {
-    if (showReciterGrid) {
-      setTimeout(() => {
-        const firstReciter = document.querySelector('[data-nav-id="reciter-0"]') as HTMLElement;
-        if (firstReciter) firstReciter.focus();
-      }, 100);
-    }
-  }, [showReciterGrid]);
-
-  // التركيز التلقائي عند فتح فهرس السور
-  useEffect(() => {
-    if (showSurahGrid) {
-      setTimeout(() => {
-        const firstSurah = document.querySelector('[data-nav-id="surah-0"]') as HTMLElement;
-        if (firstSurah) firstSurah.focus();
-      }, 100);
-    }
-  }, [showSurahGrid]);
+  // Sort channels: Starred first
+  const sortedChannels = useMemo(() => {
+    return [...favoriteChannels].sort((a, b) => {
+      if (a.starred && !b.starred) return -1;
+      if (!a.starred && b.starred) return 1;
+      return 0;
+    });
+  }, [favoriteChannels]);
 
   useEffect(() => {
     async function fetchReciters() {
@@ -125,11 +100,6 @@ export function MediaView() {
       setVideoResults(results);
       setShowReciterGrid(false);
       setShowSurahGrid(false);
-      
-      setTimeout(() => {
-        const firstCard = document.querySelector('[data-nav-id="search-result-0"]') as HTMLElement;
-        if (firstCard) firstCard.focus();
-      }, 600);
     } catch (error) {
       console.error("Video search failed", error);
     } finally {
@@ -205,11 +175,6 @@ export function MediaView() {
     try {
       const videos = await fetchChannelVideos(channel.channelid);
       setChannelVideos(videos);
-      
-      setTimeout(() => {
-        const firstCard = document.querySelector('[data-nav-id="channel-video-0"]') as HTMLElement;
-        if (firstCard) firstCard.focus();
-      }, 600);
     } finally {
       setIsLoadingVideos(false);
     }
@@ -525,14 +490,35 @@ export function MediaView() {
               </DialogContent>
             </Dialog>
 
-            {favoriteChannels.map((channel, idx) => (
+            {sortedChannels.map((channel, idx) => (
               <div key={channel.channelid} data-nav-id={`fav-channel-${idx}`} className="flex flex-col items-center gap-4 group relative focusable" tabIndex={0} onClick={() => handleSelectChannel(channel)}>
                 <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-white/10 group-hover:border-primary transition-all duration-500 cursor-pointer shadow-2xl relative">
                   <Image src={channel.image} alt={channel.name} fill className="object-cover group-hover:scale-115 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-all" />
+                  
+                  {/* Star Toggle Button */}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); toggleStarChannel(channel.channelid); }}
+                    className={cn(
+                      "absolute top-2 right-2 w-10 h-10 rounded-full backdrop-blur-xl border border-white/10 flex items-center justify-center transition-all z-30",
+                      channel.starred ? "bg-yellow-500 text-black opacity-100" : "bg-black/60 text-white/40 hover:text-white opacity-0 group-hover:opacity-100 group-focus:opacity-100"
+                    )}
+                  >
+                    <Star className={cn("w-5 h-5", channel.starred && "fill-current")} />
+                  </button>
+
+                  {/* Remove Button */}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); removeChannel(channel.channelid); }}
+                    className="absolute top-2 left-2 w-10 h-10 rounded-full bg-red-600/80 backdrop-blur-xl border border-white/10 text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 group-focus:opacity-100 z-30 hover:bg-red-600"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
                 </div>
                 <div className="flex flex-col items-center">
-                  <span className="font-black text-sm text-center text-white/70 group-hover:text-white truncate w-full px-4">{channel.name}</span>
+                  <span className={cn("font-black text-sm text-center truncate w-full px-4", channel.starred ? "text-yellow-500" : "text-white/70 group-hover:text-white")}>
+                    {channel.name}
+                  </span>
                 </div>
               </div>
             ))}

@@ -18,18 +18,13 @@ export function MoonWidget() {
   const [loading, setLoading] = useState(true);
   const [rotation, setRotation] = useState(0);
   const [infoIndex, setInfoIndex] = useState(0);
-  const [hijriDay, setHijriDay] = useState("");
 
   useEffect(() => {
     async function fetchMoonData() {
       const now = new Date();
-      const hours = now.getHours();
-      let targetDate = new Date(now);
-      if (hours < 18) targetDate.setDate(targetDate.getDate() - 1);
-
-      const year = targetDate.getFullYear();
-      const month = (targetDate.getMonth() + 1).toString().padStart(2, '0');
-      const day = targetDate.getDate().toString().padStart(2, '0');
+      const year = now.getFullYear();
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      const day = now.getDate().toString().padStart(2, '0');
       const nasaDateString = `${year}-${month}-${day}T18:00`;
 
       try {
@@ -38,15 +33,11 @@ export function MoonWidget() {
         const data = await response.json();
         setMoonData(data);
       } catch (error) {
-        console.error("Moon Fetch Error:", error);
+        console.error("NASA Sync Error:", error);
       } finally {
         setLoading(false);
       }
     }
-
-    // Dynamic Hijri Day Calculation
-    const hDay = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {day: 'numeric'}).format(new Date());
-    setHijriDay(hDay);
 
     fetchMoonData();
     const rotTimer = setInterval(() => { setRotation(prev => (prev + 0.05) % 360); }, 100);
@@ -55,18 +46,22 @@ export function MoonWidget() {
   }, []);
 
   const currentInfo = useMemo(() => {
-    if (!moonData) return { label: "جاري المزامنة", value: "NASA SVS" };
-    const formattedPhase = typeof moonData.phase === 'string' ? moonData.phase.replace(/-/g, ' ') : String(moonData.phase);
+    if (!moonData) return { label: "NASA HUB", value: "Syncing..." };
+    const phaseStr = String(moonData.phase || "Full Moon");
+    const formattedPhase = phaseStr.replace(/-/g, ' ');
+    
     const infos = [
       { label: "نسبة الإضاءة", value: `${Math.round(moonData.illumination || 0)}%` },
-      { label: "المسافة", value: `${Math.round(moonData.distance || 0).toLocaleString()} KM` },
+      { label: "المسافة المدارية", value: `${Math.round(moonData.distance || 0).toLocaleString()} KM` },
       { label: "مرحلة القمر", value: formattedPhase },
     ];
     return infos[infoIndex];
   }, [moonData, infoIndex]);
 
+  const hijriDay = "١٤";
+
   return (
-    <div className="h-full w-full bg-black/40 rounded-[2.5rem] overflow-hidden relative group shadow-2xl flex flex-col items-center justify-center p-4">
+    <div className="h-full w-full bg-black/40 rounded-[2.5rem] overflow-hidden relative flex flex-col items-center justify-center p-4 shadow-2xl">
       <CardContent className="p-0 h-full flex flex-col items-center justify-center gap-4 relative z-10 w-full text-center">
         <div className="relative w-32 h-32 flex-shrink-0 mx-auto">
           {loading ? (
@@ -76,8 +71,15 @@ export function MoonWidget() {
           ) : (
             <div className="relative w-32 h-32 mx-auto">
               <div id="hijri-moon-overlay" 
-                className="absolute inset-0 flex items-center justify-center z-20 font-black text-6xl opacity-30 pointer-events-none"
-                style={{ WebkitTextStroke: '1.5px rgba(255,255,255,0.7)', textShadow: '0 4px 10px rgba(0,0,0,0.5)', transform: 'scale(3.5)' }}
+                className="absolute inset-0 flex items-center justify-center z-20 font-black text-6xl pointer-events-none"
+                style={{ 
+                  WebkitTextStroke: '0.7px rgba(255,255,255,0.6)', 
+                  background: 'linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(255,255,255,0.1))',
+                  WebkitBackgroundClip: 'text',
+                  color: 'transparent',
+                  textShadow: '0 4px 15px rgba(0,0,0,0.4)', 
+                  transform: 'scale(3.5)' 
+                }}
               >
                 {hijriDay}
               </div>

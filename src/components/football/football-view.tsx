@@ -12,6 +12,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { fetchFootballData } from "@/lib/football-api";
 import { cn } from "@/lib/utils";
 
+const MAJOR_CLUBS_IDS = [541, 529, 40, 50, 33, 42, 157, 505, 489, 496, 85, 2931, 2939, 2930, 1029, 1038];
+const MAJOR_LEAGUES_IDS = [2, 3, 39, 140, 135, 165, 61, 307, 233];
+
 export function FootballView() {
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,15 +24,6 @@ export function FootballView() {
 
   const isFavTeam = (id: number) => favoriteTeams.some(t => t.id === id);
   const isBelled = (id: string) => belledMatchIds.includes(id);
-
-  useEffect(() => {
-    if (!loading && matches.length > 0) {
-      setTimeout(() => {
-        const firstMatch = document.querySelector('.match-card-item') as HTMLElement;
-        if (firstMatch) firstMatch.focus();
-      }, 500);
-    }
-  }, [loading, activeTab]);
 
   const loadMatches = async (view: string) => {
     setLoading(true);
@@ -66,20 +60,25 @@ export function FootballView() {
     }
 
     return result.sort((a, b) => {
-      // 1. الجرس أولاً
+      // 1. الجرس (المباريات المفضلة المحددة يدوياً)
       const aIsBelled = isBelled(a.id);
       const bIsBelled = isBelled(b.id);
       if (aIsBelled && !bIsBelled) return -1;
       if (!aIsBelled && bIsBelled) return 1;
 
-      // 2. الفرق المفضلة + مباشر
+      // 2. المباريات الكبرى (أندية كبرى ضد بعضها أو دوريات كبرى)
+      const aIsMajor = MAJOR_CLUBS_IDS.includes(a.homeTeamId) || MAJOR_CLUBS_IDS.includes(a.awayTeamId);
+      const bIsMajor = MAJOR_CLUBS_IDS.includes(b.homeTeamId) || MAJOR_CLUBS_IDS.includes(b.awayTeamId);
+      
+      const aInMajorLeague = MAJOR_LEAGUES_IDS.includes(a.leagueId);
+      const bInMajorLeague = MAJOR_LEAGUES_IDS.includes(b.leagueId);
+
+      if ((aIsMajor || aInMajorLeague) && !(bIsMajor || bInMajorLeague)) return -1;
+      if (!(aIsMajor || aInMajorLeague) && (bIsMajor || bInMajorLeague)) return 1;
+
+      // 3. الفرق المفضلة للمستخدم
       const aIsFav = isFavTeam(a.homeTeamId) || isFavTeam(a.awayTeamId);
       const bIsFav = isFavTeam(b.homeTeamId) || isFavTeam(b.awayTeamId);
-      
-      if (aIsFav && a.status === 'live' && !(bIsFav && b.status === 'live')) return -1;
-      if (bIsFav && b.status === 'live' && !(aIsFav && a.status === 'live')) return 1;
-
-      // 3. الفرق المفضلة (عام)
       if (aIsFav && !bIsFav) return -1;
       if (!aIsFav && bIsFav) return 1;
       
@@ -91,6 +90,7 @@ export function FootballView() {
     const isFavMatch = isFavTeam(match.homeTeamId) || isFavTeam(match.awayTeamId);
     const isBelledMatch = isBelled(match.id);
     const isLive = match.status === 'live';
+    const isMajorGame = MAJOR_CLUBS_IDS.includes(match.homeTeamId) && MAJOR_CLUBS_IDS.includes(match.awayTeamId);
 
     return (
       <Card 
@@ -99,7 +99,7 @@ export function FootballView() {
           "relative match-card-item overflow-hidden transition-all duration-500 border-white/5 group focusable",
           isBelledMatch 
             ? "ring-2 ring-accent bg-accent/5 shadow-[0_0_30px_rgba(var(--accent),0.1)]" 
-            : isFavMatch 
+            : isFavMatch || isMajorGame
               ? "ring-2 ring-primary bg-primary/10 shadow-[0_0_30px_rgba(var(--primary),0.2)]" 
               : "hover:bg-card/60 bg-card/40"
         )}
@@ -118,11 +118,11 @@ export function FootballView() {
           </button>
         </div>
 
-        {isFavMatch && (
+        {(isFavMatch || isMajorGame) && (
           <div className="absolute top-0 right-0 p-2 z-20">
             <Badge className="bg-yellow-500 text-black border-none font-black text-[10px] py-1 px-3 flex items-center gap-1 shadow-lg">
               <Star className="h-3 w-3 fill-current" />
-              مباراة كبرى
+              {isMajorGame ? "ديربي / قمة" : "مباراة هامة"}
             </Badge>
           </div>
         )}

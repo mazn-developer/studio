@@ -1,35 +1,8 @@
+
 'use client';
 
 import { FOOTBALL_API_KEY, FOOTBALL_API_BASE_URL } from "./constants";
 import { Match, TEAM_LIST } from "./football-data";
-
-/**
- * Intelligent mapping for Arabic team names to English to ensure global API accuracy.
- */
-const ARABIC_TO_ENGLISH_MAP: Record<string, string> = {
-  "ريال مدريد": "Real Madrid",
-  "برشلونة": "Barcelona",
-  "ليفربول": "Liverpool",
-  "مانشستر سيتي": "Manchester City",
-  "مانشستر يونايتد": "Manchester United",
-  "أرسنال": "Arsenal",
-  "تشيلسي": "Chelsea",
-  "توتنهام": "Tottenham",
-  "بايرن ميونخ": "Bayern Munich",
-  "يوفنتوس": "Juventus",
-  "إنتر ميلان": "Inter",
-  "ميلان": "AC Milan",
-  "باريس سان جيرمان": "Paris Saint Germain",
-  "روما": "Roma",
-  "الهلال": "Al Hilal",
-  "النصر": "Al Nassr",
-  "الاتحاد": "Al Ittihad",
-  "الأهلي": "Al Ahli",
-  "الأهلي المصري": "Al Ahly",
-  "الزمالك": "Zamalek",
-  "العين": "Al Ain",
-  "السد": "Al Sadd",
-};
 
 export async function fetchFootballData(type: 'today' | 'live' | 'yesterday' | 'tomorrow'): Promise<Match[]> {
   const now = new Date();
@@ -85,50 +58,29 @@ export async function fetchFootballData(type: 'today' | 'live' | 'yesterday' | '
 }
 
 export async function searchFootballTeams(query: string, leagueId?: string): Promise<any[]> {
-  if (!query && (!leagueId || leagueId === 'all')) return [];
-
-  // Local Arabic Search First
-  let results = TEAM_LIST.filter(t => 
-    t.name.includes(query) && 
-    (leagueId === 'all' || !leagueId || t.leagueId === parseInt(leagueId))
-  ).map(t => ({
-    team: { id: t.id, name: t.name, logo: `https://media.api-sports.io/football/teams/${t.id}.png` }
-  }));
-
-  if (results.length >= 3) return results.slice(0, 3);
-
-  // Translate Arabic Query to English for Global Search
-  let translatedQuery = query;
-  for (const [ar, en] of Object.entries(ARABIC_TO_ENGLISH_MAP)) {
-    if (query.includes(ar)) {
-      translatedQuery = en;
-      break;
-    }
-  }
-
   const headers = {
     'x-apisports-key': FOOTBALL_API_KEY || '2f79edc60ed7f63aa4af1feea0f1ff2c',
     'x-rapidapi-host': 'v3.football.api-sports.io'
   };
 
-  const url = `${FOOTBALL_API_BASE_URL}/teams?search=${encodeURIComponent(translatedQuery)}${leagueId && leagueId !== 'all' ? `&league=${leagueId}` : ''}`;
+  // If a league is selected but no query, fetch ALL teams in that league
+  let url = `${FOOTBALL_API_BASE_URL}/teams`;
+  
+  if (query.trim()) {
+    url += `?search=${encodeURIComponent(query)}`;
+    if (leagueId && leagueId !== 'all') url += `&league=${leagueId}`;
+  } else if (leagueId && leagueId !== 'all') {
+    url += `?league=${leagueId}&season=2024`; // Default to current season
+  } else {
+    return [];
+  }
 
   try {
     const response = await fetch(url, { method: 'GET', headers: headers });
-    if (!response.ok) return results;
+    if (!response.ok) return [];
     const data = await response.json();
-    const apiResults = (data.response || []).slice(0, 3);
-    
-    // Merge local and API results, avoiding duplicates
-    const combined = [...results];
-    apiResults.forEach((res: any) => {
-      if (!combined.some(c => c.team.id === res.team.id)) {
-        combined.push(res);
-      }
-    });
-    
-    return combined.slice(0, 3);
+    return data.response || [];
   } catch (error) {
-    return results;
+    return [];
   }
 }

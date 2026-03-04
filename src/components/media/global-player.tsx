@@ -1,12 +1,11 @@
+
 "use client";
 
 import { useMediaStore } from "@/lib/store";
-import { X, Minimize2, Bookmark, Monitor, ChevronDown, Play, Pause, Activity } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { X, Minimize2, Bookmark, Monitor, ChevronDown, Play, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { FluidGlass } from "@/components/ui/fluid-glass";
 
 export function GlobalVideoPlayer() {
   const { 
@@ -20,13 +19,11 @@ export function GlobalVideoPlayer() {
     setIsMinimized, 
     setIsFullScreen,
     toggleSaveVideo,
-    updateVideoProgress,
     savedVideos,
   } = useMediaStore();
   
   const [mounted, setMounted] = useState(false);
   const playerRef = useRef<any>(null);
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -82,13 +79,14 @@ export function GlobalVideoPlayer() {
   return (
     <div 
       className={cn(
-        "fixed z-[9999] transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)]",
+        "fixed z-[9999] transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-2xl",
         isMinimized 
-          ? "bottom-12 right-12 w-[500px] h-28 rounded-[2.5rem] liquid-glass cursor-pointer shadow-2xl" 
+          ? "bottom-12 left-1/2 -translate-x-1/2 w-[500px] h-28 rounded-[2.5rem] liquid-glass cursor-pointer" 
           : isFullScreen
             ? "inset-0 w-full h-full bg-black"
-            : "bottom-8 left-1/2 -translate-x-1/2 w-[75vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95 shadow-2xl !fixed"
+            : "bottom-8 right-4 w-[50vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95 left-auto translate-x-0"
       )}
+      style={{ position: 'fixed' }}
       onClick={() => isMinimized && setIsFullScreen(true)}
     >
       <div className={cn(
@@ -98,30 +96,35 @@ export function GlobalVideoPlayer() {
         <div id="youtube-player-element" className="w-full h-full"></div>
       </div>
 
+      {/* Minimized Centered Overlay */}
       {isMinimized && (
         <div className="h-full w-full flex items-center justify-between px-8 relative z-10">
           <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div className="relative w-20 h-14 rounded-xl overflow-hidden flex-shrink-0">
+            <div className="relative w-20 h-14 rounded-xl overflow-hidden flex-shrink-0 border border-white/10">
               <Image src={activeVideo.thumbnail} alt="" fill className="object-cover" />
             </div>
             <div className="flex flex-col min-w-0 text-right">
               <h4 className="text-base font-black text-white truncate">{activeVideo.title}</h4>
-              <span className="text-[9px] text-accent font-black uppercase">{activeVideo.channelTitle}</span>
+              <span className="text-[9px] text-accent font-black uppercase tracking-widest">{activeVideo.channelTitle}</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="rounded-full bg-white/10 text-white">
-              {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
-            </Button>
-            <Button size="icon" variant="destructive" onClick={(e) => { e.stopPropagation(); setActiveVideo(null); }} className="rounded-full">
+            <button onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/10">
+              {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
+            </button>
+            <button onClick={(e) => { e.stopPropagation(); setActiveVideo(null); }} className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg">
               <X className="w-5 h-5" />
-            </Button>
+            </button>
           </div>
         </div>
       )}
 
+      {/* Expanded Controls Overlay */}
       {!isMinimized && (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-4 z-[5200]">
+        <div className={cn(
+          "fixed bottom-12 z-[5200] flex items-center gap-4",
+          isFullScreen ? "left-1/2 -translate-x-1/2" : "right-12"
+        )}>
           <div className="flex items-center gap-3 liquid-glass p-4 rounded-full border-2 border-white/20 shadow-2xl">
             <button onClick={() => setIsMinimized(true)} className="w-14 h-14 rounded-full bg-white/10 border border-white/10 text-white flex items-center justify-center focusable"><ChevronDown className="w-6 h-6" /></button>
             <button onClick={() => setIsFullScreen(!isFullScreen)} className={cn("w-14 h-14 rounded-full border-2 transition-all flex items-center justify-center focusable", isFullScreen ? "bg-primary border-primary" : "bg-white/10 border-white/10")}><Monitor className="w-6 h-6" /></button>

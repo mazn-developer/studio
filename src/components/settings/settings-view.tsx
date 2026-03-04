@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -77,24 +78,26 @@ export function SettingsView() {
   }, []);
 
   const handleGlobalSearch = useCallback(async () => {
-    if (!clubSearch.trim() && leagueFilter === 'all') {
-      toast({ variant: "destructive", title: "خطأ", description: "يرجى إدخال اسم النادي بالعربية أو الإنجليزية للبحث." });
-      return;
-    }
-    
     setIsSearching(true);
     try {
       const results = await searchFootballTeams(clubSearch, leagueFilter);
       setSearchResults(results);
       if (results.length === 0) {
-        toast({ title: "لا توجد نتائج", description: "لم يتم العثور على أندية تطابق بحثك في القاعدة العربية أو العالمية." });
+        toast({ title: "No Results", description: "Could not find any clubs matching your request." });
       }
     } catch (error) {
-      toast({ variant: "destructive", title: "خطأ في البحث", description: "فشل الاتصال بمحرك البحث العالمي." });
+      toast({ variant: "destructive", title: "Search Error", description: "Failed to connect to global database." });
     } finally {
       setIsSearching(false);
     }
   }, [clubSearch, leagueFilter, toast]);
+
+  // Trigger search when league changes to show all clubs in that league
+  useEffect(() => {
+    if (leagueFilter !== 'all') {
+      handleGlobalSearch();
+    }
+  }, [leagueFilter, handleGlobalSearch]);
 
   const handleAddReminder = () => {
     if (!newReminder.label.trim()) return;
@@ -211,18 +214,18 @@ export function SettingsView() {
               <Card className="bg-zinc-900/50 border-white/10 rounded-[2.5rem] p-8 text-right">
                 <CardHeader className="p-0 mb-6">
                   <CardTitle className="text-xl font-black text-white flex items-center justify-end gap-3">
-                    <Globe className="w-6 h-6 text-primary" /> محرك البحث العربي الذكي
+                    <Globe className="w-6 h-6 text-primary" /> Global Club Scout
                   </CardTitle>
                 </CardHeader>
                 <div className="space-y-6">
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">اختر الدوري</label>
+                    <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Select League</label>
                     <Select value={leagueFilter} onValueChange={setLeagueFilter}>
                       <SelectTrigger data-nav-id="league-select" className="bg-white/5 border-white/10 h-14 rounded-2xl focusable text-right">
-                        <SelectValue placeholder="كافة الدوريات" />
+                        <SelectValue placeholder="All Major Leagues" />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-900 border-white/10 text-white rounded-2xl">
-                        <SelectItem value="all">كافة الدوريات</SelectItem>
+                        <SelectItem value="all">All Major Leagues</SelectItem>
                         {MAJOR_LEAGUES.map(league => (
                           <SelectItem key={league.id} value={league.id.toString()}>{league.name}</SelectItem>
                         ))}
@@ -230,10 +233,10 @@ export function SettingsView() {
                     </Select>
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">اسم النادي بالعربية</label>
+                    <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Team Name (English)</label>
                     <div className="relative">
                       <Input 
-                        placeholder="ابحث عن أنديتك المفضلة بالعربية..." 
+                        placeholder="Search teams in English (e.g. Real Madrid)..." 
                         className="bg-white/5 border-white/10 h-14 px-6 rounded-2xl focusable text-right"
                         value={clubSearch}
                         onChange={(e) => setClubSearch(e.target.value)}
@@ -247,7 +250,7 @@ export function SettingsView() {
                     className="w-full h-14 rounded-2xl bg-primary text-white font-black shadow-lg focusable"
                   >
                     {isSearching ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6 ml-2" />}
-                    بحث في القاعدة العربية
+                    Scout Database
                   </Button>
                 </div>
               </Card>
@@ -284,7 +287,7 @@ export function SettingsView() {
               {searchResults.length > 0 && (
                 <Card className="bg-zinc-900/50 border-white/10 rounded-[2.5rem] p-8 animate-in fade-in slide-in-from-top-6 duration-700">
                   <CardHeader className="p-0 mb-6 flex flex-row items-center justify-between">
-                    <CardTitle className="text-xl font-black text-white">نتائج البحث المترجمة</CardTitle>
+                    <CardTitle className="text-xl font-black text-white">Scouting Results</CardTitle>
                     <Button variant="ghost" onClick={() => setSearchResults([])} className="text-white/20 hover:text-white rounded-full focusable">إغلاق النتائج</Button>
                   </CardHeader>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -298,7 +301,7 @@ export function SettingsView() {
                            <Button 
                             onClick={() => toggleFavoriteTeam(team)} 
                             size="icon" 
-                            className={cn("w-10 h-10 rounded-full transition-all", isFav ? "bg-yellow-500 text-black shadow-glow" : "bg-black/40 text-white/20 hover:text-white")}
+                            className={cn("w-10 h-10 rounded-full transition-all", isFav ? "bg-yellow-500 text-black shadow-glow" : "bg-black/60 text-white/20 hover:text-white")}
                            >
                              <Star className={cn("w-5 h-5", isFav && "fill-current")} />
                            </Button>

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,14 +35,17 @@
     outline: none !important;
   }
   body {
-    @apply bg-background text-foreground font-body select-none w-full h-screen overflow-hidden;
+    @apply bg-background text-foreground font-body w-full h-screen overflow-hidden;
     background: radial-gradient(circle at 50% 50%, #0a0a1a 0%, #000000 100%);
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
-    touch-action: pan-y;
+    cursor: auto !important; /* Force Cursor Visible Always */
   }
+}
+
+/* Force position fixed for anything with fixed class */
+.fixed {
+  position: fixed !important;
 }
 
 .liquid-glass {
@@ -51,8 +55,7 @@
   border: 1.5px solid rgba(255, 255, 255, 0.15);
   box-shadow: 
     0 50px 120px -20px rgba(0, 0, 0, 1),
-    inset 0 2px 20px 0 rgba(255, 255, 255, 0.1),
-    inset 0 -2px 10px 0 rgba(255, 255, 255, 0.02);
+    inset 0 2px 20px 0 rgba(255, 255, 255, 0.1);
   position: relative;
   overflow: hidden;
 }
@@ -64,16 +67,10 @@
 
 .focusable {
   @apply transition-all duration-300;
-  will-change: transform, box-shadow, border-color;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .focusable:focus {
-  @apply scale-[1.03] ring-0 z-[100] border-primary;
-  box-shadow: 
-    0 0 80px 15px hsl(var(--primary) / 0.95),
-    0 0 40px 10px hsl(var(--primary) / 0.6),
-    inset 0 0 20px hsl(var(--primary) / 0.5);
+  @apply scale-[1.03] border-primary shadow-[0_0_40px_rgba(0,136,255,0.4)];
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -85,53 +82,11 @@
   scrollbar-width: none;
 }
 
+.shadow-glow {
+  box-shadow: 0 0 20px #0088ff;
+}
+
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-
-.animate-float {
-  animation: float 4s ease-in-out infinite;
-}
-
-::-webkit-scrollbar {
-  width: 0px;
-}
-
-.font-black {
-  font-weight: 900 !important;
-}
-
-.dir-rtl {
-  direction: rtl;
-}
-
-.safe-p-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.safe-p-top {
-  padding-top: env(safe-area-inset-top);
-}
-
-.shadow-glow {
-  box-shadow: 0 0 60px hsl(var(--primary) / 0.9);
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.animate-spin-slow {
-  animation: spin-slow 12s linear infinite;
-}
-
-.tracking-tighter {
-  letter-spacing: -0.05em;
 }
