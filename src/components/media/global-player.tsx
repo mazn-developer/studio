@@ -96,7 +96,6 @@ export function GlobalVideoPlayer() {
         <div id="youtube-player-element" className="w-full h-full"></div>
       </div>
 
-      {/* Minimized Centered Overlay */}
       {isMinimized && (
         <div className="h-full w-full flex items-center justify-between px-8 relative z-10">
           <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -109,17 +108,16 @@ export function GlobalVideoPlayer() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/10">
+            <button onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/10 focusable">
               {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
             </button>
-            <button onClick={(e) => { e.stopPropagation(); setActiveVideo(null); }} className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg">
+            <button onClick={(e) => { e.stopPropagation(); setActiveVideo(null); }} className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg focusable">
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Expanded Controls Overlay */}
       {!isMinimized && (
         <div className={cn(
           "fixed bottom-12 z-[5200] flex items-center gap-4",

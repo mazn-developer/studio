@@ -1,13 +1,15 @@
 
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Match } from "@/lib/football-data";
 import { fetchFootballData } from "@/lib/football-api";
 import { useMediaStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Clock, BellRing } from "lucide-react";
 import { FluidGlass } from "@/components/ui/fluid-glass";
+
+const MAJOR_CLUBS_IDS = [541, 529, 40, 50, 33, 42, 157, 505, 489, 496, 85, 2931, 2939, 2930, 1029, 1038];
 
 export function LiveMatchIsland() {
   const { favoriteTeams, favoriteLeagueIds, prayerTimes, belledMatchIds } = useMediaStore();
@@ -30,32 +32,37 @@ export function LiveMatchIsland() {
         return;
       }
 
-      // Priority logic: Live > Belled > Favorite Team > Favorite League
+      // Priority Logic:
+      // 1. Live + Belled
+      // 2. Live + Fav Team
+      // 3. Upcoming + Belled
+      // 4. Upcoming + Fav Team
+      // 5. Live + Major/Others
       const prioritized = [...matches]
         .sort((a, b) => {
-          // 1. Live Matches first
-          if (a.status === 'live' && b.status !== 'live') return -1;
-          if (a.status !== 'live' && b.status === 'live') return 1;
+          const aIsLive = a.status === 'live';
+          const bIsLive = b.status === 'live';
+          const aIsBelled = belledMatchIds.includes(a.id);
+          const bIsBelled = belledMatchIds.includes(b.id);
+          const aIsFav = favoriteTeams.some(t => t.id === a.homeTeamId || t.id === a.awayTeamId);
+          const bIsFav = favoriteTeams.some(t => t.id === b.homeTeamId || t.id === b.awayTeamId);
+          const aIsMajor = MAJOR_CLUBS_IDS.includes(a.homeTeamId!) || MAJOR_CLUBS_IDS.includes(a.awayTeamId!);
+          const bIsMajor = MAJOR_CLUBS_IDS.includes(b.homeTeamId!) || MAJOR_CLUBS_IDS.includes(b.awayTeamId!);
 
-          // 2. Belled Matches
-          const aBelled = belledMatchIds.includes(a.id);
-          const bBelled = belledMatchIds.includes(b.id);
-          if (aBelled && !bBelled) return -1;
-          if (!aBelled && bBelled) return 1;
+          const getScore = (match: any, isLive: boolean, isBelled: boolean, isFav: boolean, isMajor: boolean) => {
+            if (isLive && isBelled) return 1000;
+            if (isLive && isFav) return 900;
+            if (!isLive && isBelled) return 800;
+            if (!isLive && isFav) return 700;
+            if (isLive) return 600;
+            if (isMajor) return 500;
+            return 0;
+          };
 
-          // 3. Favorite Team Matches
-          const aIsFavTeam = favoriteTeams.some(t => t.id === a.homeTeamId || t.id === a.awayTeamId);
-          const bIsFavTeam = favoriteTeams.some(t => t.id === b.homeTeamId || t.id === b.awayTeamId);
-          if (aIsFavTeam && !bIsFavTeam) return -1;
-          if (!aIsFavTeam && bIsFavTeam) return 1;
+          const scoreA = getScore(a, aIsLive, aIsBelled, aIsFav, aIsMajor);
+          const scoreB = getScore(b, bIsLive, bIsBelled, bIsFav, bIsMajor);
 
-          // 4. Favorite League Matches
-          const aIsFavLeague = favoriteLeagueIds.includes(a.leagueId || 0);
-          const bIsFavLeague = favoriteLeagueIds.includes(b.leagueId || 0);
-          if (aIsFavLeague && !bIsFavLeague) return -1;
-          if (!aIsFavLeague && bIsFavLeague) return 1;
-
-          return 0;
+          return scoreB - scoreA;
         })
         .slice(0, 3);
       
@@ -63,7 +70,7 @@ export function LiveMatchIsland() {
     } catch (error) {
       console.error("Island Sync Error:", error);
     }
-  }, [belledMatchIds, favoriteTeams, favoriteLeagueIds]);
+  }, [belledMatchIds, favoriteTeams]);
 
   useEffect(() => {
     const checkPrayers = () => {
@@ -94,6 +101,7 @@ export function LiveMatchIsland() {
         const azanMins = timeToMinutes(p.time);
         const iqamahMins = azanMins + p.iqamah;
 
+        // 3 Minutes Before Azan (Countdown)
         if (currentMinutes >= azanMins - 3 && currentMinutes < azanMins) {
           const diffSecs = (azanMins * 60) - (currentMinutes * 60 + currentSeconds);
           const m = Math.floor(diffSecs / 60);
@@ -101,6 +109,7 @@ export function LiveMatchIsland() {
           activeAlert = { type: 'countdown', name: p.name, timeLabel: `باقي للأذان ${m}:${s.toString().padStart(2,'0')}`, isCountingDown: true };
           break;
         }
+        // 3 Minutes After Azan (Countup)
         if (currentMinutes >= azanMins && currentMinutes < azanMins + 3) {
           const diffSecs = (currentMinutes * 60 + currentSeconds) - (azanMins * 60);
           const m = Math.floor(diffSecs / 60);
@@ -108,6 +117,7 @@ export function LiveMatchIsland() {
           activeAlert = { type: 'azan', name: p.name, timeLabel: `حان وقت الأذان (+${m}:${s.toString().padStart(2,'0')})`, isCountingDown: false };
           break;
         }
+        // 5 Minutes Before Iqamah (Countdown)
         if (currentMinutes >= iqamahMins - 5 && currentMinutes < iqamahMins) {
           const diffSecs = (iqamahMins * 60) - (currentMinutes * 60 + currentSeconds);
           const m = Math.floor(diffSecs / 60);
@@ -115,6 +125,7 @@ export function LiveMatchIsland() {
           activeAlert = { type: 'countdown', name: p.name, timeLabel: `باقي للإقامة ${m}:${s.toString().padStart(2,'0')}`, isCountingDown: true };
           break;
         }
+        // 10 Minutes After Iqamah (Countup / Notification)
         if (currentMinutes >= iqamahMins && currentMinutes < iqamahMins + 10) {
           const diffSecs = (currentMinutes * 60 + currentSeconds) - (iqamahMins * 60);
           const m = Math.floor(diffSecs / 60);

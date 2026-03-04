@@ -300,8 +300,9 @@ export const useMediaStore = create<MediaState>()(
 if (typeof window !== "undefined") {
   const syncWithBins = async () => {
     try {
+      // Sync Channels
       const chRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_CHANNELS_BIN_ID}/latest`, {
-        headers: { 'X-Access-Key': JSONBIN_ACCESS_KEY_CHANNELS }
+        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
       });
       if (chRes.ok) {
         const data = await chRes.json();
@@ -310,6 +311,7 @@ if (typeof window !== "undefined") {
         }
       }
 
+      // Sync Clubs & Belled Matches
       const clRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_CLUBS_BIN_ID}/latest`, {
         headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
       });
@@ -319,8 +321,18 @@ if (typeof window !== "undefined") {
           if (data.record.teams) useMediaStore.setState({ favoriteTeams: data.record.teams });
           if (data.record.matches) useMediaStore.setState({ belledMatchIds: data.record.matches });
         } else if (Array.isArray(data.record)) {
-          // Backward compatibility
           useMediaStore.setState({ favoriteTeams: data.record });
+        }
+      }
+
+      // Sync Saved Videos (Added)
+      const svRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_SAVED_VIDEOS_BIN_ID}/latest`, {
+        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+      });
+      if (svRes.ok) {
+        const data = await svRes.json();
+        if (Array.isArray(data.record)) {
+          useMediaStore.setState({ savedVideos: data.record });
         }
       }
     } catch (e) {
