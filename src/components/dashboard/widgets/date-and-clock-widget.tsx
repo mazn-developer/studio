@@ -1,25 +1,22 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
 import { convertTo12Hour } from "@/lib/constants";
 import { Clock, Timer, Calendar } from "lucide-react";
-import Image from "next/image";
 import { useMediaStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 export function DateAndClockWidget() {
-  const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
   const { prayerTimes } = useMediaStore();
   
   useEffect(() => {
-    setMounted(true);
     setNow(new Date());
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const nextPrayer = useMemo(() => {
+  const prayerStatus = useMemo(() => {
     if (!now || !prayerTimes || prayerTimes.length === 0) return null;
     
     const timeToMinutes = (t: string) => {
@@ -34,87 +31,69 @@ export function DateAndClockWidget() {
     const pTimes = prayerTimes.find(p => p.date === dateStr) || prayerTimes[0];
     
     const prayers = [
-      { name: "الفجر", time: pTimes.fajr },
-      { name: "الظهر", time: pTimes.dhuhr },
-      { name: "العصر", time: pTimes.asr },
-      { name: "المغرب", time: pTimes.maghrib },
-      { name: "العشاء", time: pTimes.isha },
+      { name: "الفجر", time: pTimes.fajr, iqamah: 25 },
+      { name: "الظهر", time: pTimes.dhuhr, iqamah: 20 },
+      { name: "العصر", time: pTimes.asr, iqamah: 20 },
+      { name: "المغرب", time: pTimes.maghrib, iqamah: 10 },
+      { name: "العشاء", time: pTimes.isha, iqamah: 20 },
     ];
+
+    for (let p of prayers) {
+      const azanMins = timeToMinutes(p.time);
+      const iqamahMins = azanMins + p.iqamah;
+      if (currentMinutes >= azanMins && currentMinutes < iqamahMins) {
+        const diff = currentMinutes - azanMins;
+        return { type: "iqamah", name: p.name, text: `مضى ${diff} دقيقة من الأذان`, time: p.time };
+      }
+    }
 
     let next = prayers.find(p => timeToMinutes(p.time) > currentMinutes);
     if (!next) next = prayers[0];
-
     const targetMins = timeToMinutes(next.time);
     let diff = targetMins - currentMinutes;
     if (diff < 0) diff += 24 * 60;
     
-    const hours = Math.floor(diff / 60);
-    const mins = diff % 60;
-
-    return {
-      name: next.name,
-      time: next.time,
-      countdown: `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+    return { 
+      type: "azan", 
+      name: next.name, 
+      text: `متبقي ${Math.floor(diff/60)}:${(diff%60).toString().padStart(2,'0')} لصلاة ${next.name}`,
+      time: next.time
     };
   }, [now, prayerTimes]);
 
-  if (!mounted || !now) return (
-    <div className="h-full w-full flex items-center justify-center bg-black/20 animate-pulse">
-      <Clock className="w-12 h-12 text-white/10" />
-    </div>
-  );
+  if (!now) return null;
 
   const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-  const dayName = now.toLocaleDateString('ar-EG', { weekday: 'long' });
-  const dayNum = now.getDate();
-  const monthName = now.toLocaleDateString('ar-EG', { month: 'long' });
+  const dateString = now.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center p-4 relative overflow-hidden bg-black rounded-[2.5rem]">
-      <div className="absolute inset-0 z-0">
-        <Image 
-          src="https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?auto=format&fit=crop&q=80&w=1000"
-          alt="Atmospheric Background"
-          fill
-          className="object-cover opacity-30 transition-transform duration-[8s]"
-          data-ai-hint="mountain night"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/60 via-black/60 to-black" />
+    <div className="h-full w-full flex flex-col items-center justify-center p-6 bg-black/40 rounded-[2.5rem] relative overflow-hidden text-center">
+      {/* Clock on Top */}
+      <div className="flex flex-col items-center gap-2 mb-4">
+        <div className="text-7xl font-black text-white tracking-tighter drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)] tabular-nums">
+          {timeString}
+        </div>
+        <div className="flex items-center gap-2 bg-white/5 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-md">
+          <Calendar className="w-3 h-3 text-accent" />
+          <span className="text-[10px] text-white/90 font-black uppercase tracking-widest">{dateString}</span>
+        </div>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center w-full max-w-[95%] gap-2">
-        <div className="flex flex-col items-center text-center">
-          {/* Prominent Clock - Ultra Visibility */}
-          <div className="text-[11rem] font-black text-white tracking-tighter drop-shadow-[0_40px_100px_rgba(0,0,0,1)] leading-none mb-4 animate-in fade-in zoom-in-95 duration-1000">
-            {timeString}
+      {/* Prayer Info Bottom */}
+      {prayerStatus && (
+        <div className={cn(
+          "w-full flex flex-col items-center gap-1 p-4 rounded-[2rem] border transition-all duration-500",
+          prayerStatus.type === "iqamah" ? "bg-accent/20 border-accent/40" : "bg-primary/10 border-primary/20"
+        )}>
+          <div className="flex items-center gap-2">
+            <Timer className={cn("w-4 h-4", prayerStatus.type === "iqamah" ? "text-accent animate-pulse" : "text-primary")} />
+            <span className="text-[11px] font-black text-white/80 uppercase tracking-wide">{prayerStatus.text}</span>
           </div>
-          <div className="flex items-center gap-2 bg-white/5 px-8 py-3 rounded-full border border-white/10 backdrop-blur-3xl shadow-2xl">
-            <Calendar className="w-5 h-5 text-accent" />
-            <span className="text-[16px] text-white/90 font-black uppercase tracking-[0.4em]">{dayName} {dayNum} {monthName}</span>
-          </div>
+          <span className="text-2xl font-black text-accent drop-shadow-lg">
+            {convertTo12Hour(prayerStatus.time)}
+          </span>
         </div>
-        
-        {nextPrayer && (
-          <div className="w-full flex flex-col items-center gap-1.5 mt-4 bg-primary/10 p-4 rounded-[2rem] border border-primary/20 backdrop-blur-xl shadow-2xl">
-            <div className="flex items-center gap-4 w-full justify-center">
-              <div className="bg-primary/20 text-primary px-4 py-1.5 rounded-full border border-primary/30">
-                <span className="text-[10px] font-black uppercase tracking-widest">الصلاة القادمة: {nextPrayer.name}</span>
-              </div>
-              <span className="text-3xl font-black text-accent drop-shadow-[0_0_20px_rgba(65,184,131,0.5)]">
-                {convertTo12Hour(nextPrayer.time)}
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-3 text-white/60">
-              <div className="h-px w-8 bg-white/10" />
-              <div className="text-[10px] font-black uppercase tracking-[0.5em] flex items-center gap-2">
-                <Timer className="w-4 h-4 text-primary animate-pulse" /> متبقي {nextPrayer.countdown}
-              </div>
-              <div className="h-px w-8 bg-white/10" />
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

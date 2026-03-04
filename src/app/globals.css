@@ -41,13 +41,7 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     touch-action: pan-y;
-    cursor: none !important;
   }
-}
-
-/* تعطيل مؤشر الماوس تماماً لمتصفحات VIDAA */
-.no-cursor, .no-cursor * {
-  cursor: none !important;
 }
 
 .liquid-glass {
@@ -74,7 +68,6 @@
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* التوهج العالي (Ultra Glow) للتركيز بالريموت */
 .focusable:focus {
   @apply scale-[1.03] ring-0 z-[100] border-primary;
   box-shadow: 

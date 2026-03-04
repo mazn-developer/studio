@@ -1,18 +1,15 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
-import { RotateCcw, Upload } from "lucide-react";
 import Image from "next/image";
-import { MapWidget } from "./widgets/map-widget";
-import { PrayerTimelineWidget } from "./widgets/prayer-timeline-widget";
-import { DateAndClockWidget } from "./widgets/date-and-clock-widget";
 import { MoonWidget } from "./widgets/moon-widget";
+import { DateAndClockWidget } from "./widgets/date-and-clock-widget";
+import { WeatherWidget } from "./widgets/weather-widget";
 import { PlayingNowWidget } from "./widgets/playing-now-widget";
+import { PrayerTimelineWidget } from "./widgets/prayer-timeline-widget";
+import { MapWidget } from "./widgets/map-widget";
 import { LatestVideosWidget } from "./widgets/latest-videos-widget";
 import { YouTubeSavedWidget } from "./widgets/youtube-saved-widget";
-import { PrayerCountdownCard } from "./widgets/prayer-countdown-card";
-import { WeatherWidget } from "./widgets/weather-widget";
 import { useMediaStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import {
@@ -30,89 +27,55 @@ export function DashboardView() {
 
   useEffect(() => {
     if (!api) return;
-
     setCount(api.scrollSnapList().length);
     setCurrent(api.selectedScrollSnap());
-
     api.on("select", () => {
       setCurrent(api.selectedScrollSnap());
     });
-
-    const interval = setInterval(() => {
-      api.scrollNext();
-    }, 8000); 
-
+    const interval = setInterval(() => { api.scrollNext(); }, 10000);
     return () => clearInterval(interval);
   }, [api]);
-
-  useEffect(() => {
-    setTimeout(() => {
-      const heroWidget = document.querySelector('[data-nav-id="widget-carousel-hero"]') as HTMLElement;
-      if (heroWidget) heroWidget.focus();
-    }, 600);
-  }, []);
 
   const starredChannels = favoriteChannels.filter(c => c.starred);
 
   return (
-    <div className="h-full w-full p-6 flex flex-col gap-8 relative overflow-y-auto pb-32 no-scrollbar">
-      {/* Lexus Logo - Top Center Floating */}
+    <div className="h-full w-full p-6 flex flex-col gap-6 relative overflow-y-auto pb-32 no-scrollbar">
+      {/* Lexus Logo */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[50] opacity-80 pointer-events-none">
         <Image 
           src="https://dmusera.netlify.app/Lexus-Logo.wine.svg" 
           alt="Lexus" 
-          width={160} 
-          height={35} 
+          width={140} 
+          height={30} 
           className="invert brightness-200"
         />
       </div>
 
-      {/* Main Top Grid: Map (Left), Car (Middle), Carousel (Right) */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[520px]">
-        {/* Left Column - Map */}
-        <div 
-          className="md:col-span-4 glass-panel rounded-[2.5rem] overflow-hidden relative group shadow-2xl h-full focusable outline-none"
-          tabIndex={0}
-          data-nav-id="widget-map"
-        >
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[420px]">
+        {/* Left: Map */}
+        <div className="md:col-span-4 glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl h-full focusable" tabIndex={0} data-nav-id="widget-map">
           <MapWidget />
         </div>
 
-        {/* Middle Column - Car Image */}
-        <div 
-          className="md:col-span-4 glass-panel rounded-[2.5rem] relative group flex flex-col items-center justify-center overflow-hidden h-full shadow-2xl focusable outline-none"
-          tabIndex={0}
-          data-nav-id="widget-car"
-        >
-          <div className="absolute inset-0 w-full h-full">
+        {/* Middle: Car Image */}
+        <div className="md:col-span-4 glass-panel rounded-[2.5rem] relative group flex flex-col items-center justify-center overflow-hidden h-full shadow-2xl focusable" tabIndex={0} data-nav-id="widget-car">
+          <div className="absolute inset-0 w-full h-full p-8 flex items-center justify-center">
             <Image 
-              src="https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=1000" 
+              src="https://dmusera.netlify.app/es350gb.png" 
               alt="Lexus ES" 
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-1000 brightness-75 group-hover:brightness-100"
+              width={600}
+              height={300}
+              className="object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.8)] transition-transform duration-1000 group-hover:scale-110"
             />
           </div>
-          <div className="absolute bottom-10 flex gap-4 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-500 bg-black/80 backdrop-blur-3xl p-3 rounded-full border border-white/20 shadow-2xl z-20">
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-all font-black text-[9px] text-white uppercase tracking-[0.2em] outline-none focusable" tabIndex={0}>
-              <RotateCcw className="w-4 h-4" /> Reset
-            </button>
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-all font-black text-[9px] text-white uppercase tracking-[0.2em] outline-none focusable" tabIndex={0}>
-              <Upload className="w-4 h-4" /> Sync
-            </button>
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
         </div>
 
-        {/* Right Column - Hero Carousel */}
+        {/* Right: Hero Carousel */}
         <div className="md:col-span-4 flex flex-col gap-6 h-full">
-          <div 
-            className="glass-panel rounded-[2.5rem] relative group overflow-hidden flex flex-col w-full shadow-2xl h-1/2 focusable outline-none"
-            tabIndex={0}
-            data-nav-id="widget-carousel-hero"
-          >
+          <div className="glass-panel rounded-[2.5rem] relative group overflow-hidden flex flex-col w-full shadow-2xl flex-1 focusable outline-none" tabIndex={0} data-nav-id="widget-carousel-hero">
             <Carousel setApi={setApi} opts={{ loop: true }} className="flex-1 w-full h-full overflow-hidden">
               <CarouselContent className="h-full ml-0">
-                {/* NASA MOON FIRST ELEMENT */}
                 <CarouselItem className="h-full pl-0 flex items-center justify-center">
                   <MoonWidget />
                 </CarouselItem>
@@ -143,23 +106,15 @@ export function DashboardView() {
               ))}
             </div>
           </div>
-
-          <div className="h-[160px] w-full focusable outline-none rounded-[2.5rem] overflow-hidden" tabIndex={0} data-nav-id="widget-prayer-countdown">
-            <PrayerCountdownCard />
-          </div>
         </div>
       </div>
 
-      {/* Prayer Timeline */}
-      <div 
-        className="w-full glass-panel rounded-full p-4 shadow-xl transform scale-[0.9] origin-center focusable outline-none"
-        tabIndex={0}
-        data-nav-id="widget-prayer-timeline"
-      >
+      {/* Prayer Timeline - Always visible below the main row */}
+      <div className="w-full glass-panel rounded-[2.5rem] p-4 shadow-xl focusable outline-none" tabIndex={0} data-nav-id="widget-prayer-timeline">
         <PrayerTimelineWidget />
       </div>
 
-      {/* Bottom Content Area */}
+      {/* Bottom Area */}
       <div className="w-full space-y-8">
         <LatestVideosWidget channels={starredChannels} />
         <YouTubeSavedWidget />

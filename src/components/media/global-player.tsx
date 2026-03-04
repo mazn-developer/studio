@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMediaStore } from "@/lib/store";
@@ -8,13 +7,6 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { FluidGlass } from "@/components/ui/fluid-glass";
-
-declare global {
-  interface Window {
-    onYouTubeIframeAPIReady: () => void;
-    YT: any;
-  }
-}
 
 export function GlobalVideoPlayer() {
   const { 
@@ -38,7 +30,7 @@ export function GlobalVideoPlayer() {
 
   useEffect(() => {
     setMounted(true);
-    if (!window.YT) {
+    if (!(window as any).YT) {
       const tag = document.createElement('script');
       tag.src = "https://www.youtube.com/iframe_api";
       const firstScriptTag = document.getElementsByTagName('script')[0];
@@ -48,15 +40,13 @@ export function GlobalVideoPlayer() {
 
   useEffect(() => {
     if (!activeVideo || !mounted) return;
-
-    const savedV = savedVideos.find(v => v.id === activeVideo.id);
-    const startSeconds = savedV?.progress || videoProgress[activeVideo.id] || 0;
+    const startSeconds = videoProgress[activeVideo.id] || 0;
 
     const initPlayer = () => {
       if (playerRef.current) {
         try { playerRef.current.destroy(); } catch(e) {}
       }
-      playerRef.current = new window.YT.Player('youtube-player-element', {
+      playerRef.current = new (window as any).YT.Player('youtube-player-element', {
         height: '100%',
         width: '100%',
         videoId: activeVideo.id,
@@ -67,75 +57,23 @@ export function GlobalVideoPlayer() {
           rel: 0,
           start: Math.floor(startSeconds),
           enablejsapi: 1,
-          origin: window.location.origin,
-          vq: 'large'
+          origin: window.location.origin
         },
         events: {
-          onReady: (event: any) => {
-            if (isPlaying) event.target.playVideo();
-          },
           onStateChange: (event: any) => {
-            if (event.data === window.YT.PlayerState.PLAYING) {
-              setIsPlaying(true);
-              startProgressTracking();
-            } else if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.ENDED) {
-              setIsPlaying(false);
-              stopProgressTracking();
-              saveCurrentProgress();
-            }
+            if (event.data === 1) setIsPlaying(true);
+            else if (event.data === 2) setIsPlaying(false);
           }
         }
       });
     };
 
-    if (window.YT && window.YT.Player) {
+    if ((window as any).YT && (window as any).YT.Player) {
       initPlayer();
     } else {
-      window.onYouTubeIframeAPIReady = initPlayer;
+      (window as any).onYouTubeIframeAPIReady = initPlayer;
     }
-
-    return () => {
-      stopProgressTracking();
-      saveCurrentProgress();
-    };
   }, [activeVideo?.id, mounted]);
-
-  useEffect(() => {
-    if (playerRef.current && playerRef.current.getPlayerState) {
-      const state = playerRef.current.getPlayerState();
-      if (isPlaying && state !== 1) {
-        playerRef.current.playVideo();
-      } else if (!isPlaying && state === 1) {
-        playerRef.current.pauseVideo();
-      }
-    }
-  }, [isPlaying]);
-
-  const saveCurrentProgress = () => {
-    if (playerRef.current && playerRef.current.getCurrentTime && activeVideo) {
-      const currentTime = Math.floor(playerRef.current.getCurrentTime());
-      if (currentTime > 0) {
-        updateVideoProgress(activeVideo.id, currentTime);
-      }
-    }
-  };
-
-  const startProgressTracking = () => {
-    stopProgressTracking();
-    progressInterval.current = setInterval(() => {
-      if (playerRef.current && playerRef.current.getCurrentTime && activeVideo) {
-        const currentTime = Math.floor(playerRef.current.getCurrentTime());
-        updateVideoProgress(activeVideo.id, currentTime);
-      }
-    }, 5000);
-  };
-
-  const stopProgressTracking = () => {
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-      progressInterval.current = null;
-    }
-  };
 
   if (!mounted || !activeVideo) return null;
 
@@ -146,102 +84,50 @@ export function GlobalVideoPlayer() {
       className={cn(
         "fixed z-[9999] transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)]",
         isMinimized 
-          ? "bottom-12 right-12 w-[550px] h-28 rounded-[2.5rem] liquid-glass cursor-pointer shadow-[0_40px_100px_rgba(0,0,0,0.9)]" 
+          ? "bottom-12 right-12 w-[500px] h-28 rounded-[2.5rem] liquid-glass cursor-pointer shadow-2xl" 
           : isFullScreen
-            ? "inset-0 w-full h-full bg-black flex flex-col"
-            : "bottom-8 left-1/2 -translate-x-1/2 w-[75vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95 shadow-[0_60px_150px_rgba(0,0,0,1)]"
+            ? "inset-0 w-full h-full bg-black"
+            : "bottom-8 left-1/2 -translate-x-1/2 w-[75vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95 shadow-2xl !fixed"
       )}
       onClick={() => isMinimized && setIsFullScreen(true)}
     >
-      <FluidGlass scale={isMinimized ? 1.2 : 2} className="opacity-10" />
-
       <div className={cn(
         "absolute inset-0 transition-all duration-700 overflow-hidden rounded-[inherit]",
-        isMinimized ? "opacity-0 scale-90 pointer-events-none" : "opacity-100 scale-100"
+        isMinimized ? "opacity-0 pointer-events-none" : "opacity-100"
       )}>
         <div id="youtube-player-element" className="w-full h-full"></div>
       </div>
 
-      {isMinimized && activeVideo && (
-        <div className="h-full w-full flex items-center justify-between px-8 animate-in fade-in zoom-in-95 duration-700 relative z-10">
+      {isMinimized && (
+        <div className="h-full w-full flex items-center justify-between px-8 relative z-10">
           <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div className="relative w-24 h-16 rounded-xl overflow-hidden shadow-2xl flex-shrink-0 border border-white/20">
+            <div className="relative w-20 h-14 rounded-xl overflow-hidden flex-shrink-0">
               <Image src={activeVideo.thumbnail} alt="" fill className="object-cover" />
-              {isPlaying && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                  <Activity className="w-6 h-6 text-accent animate-pulse" />
-                </div>
-              )}
             </div>
             <div className="flex flex-col min-w-0 text-right">
-              <h4 className="text-lg font-black text-white truncate uppercase tracking-tighter leading-tight drop-shadow-lg">
-                {activeVideo.title}
-              </h4>
-              <span className="text-[10px] text-accent font-black uppercase tracking-[0.3em] mt-0.5">
-                {activeVideo.channelTitle || "Direct Stream"}
-              </span>
+              <h4 className="text-base font-black text-white truncate">{activeVideo.title}</h4>
+              <span className="text-[9px] text-accent font-black uppercase">{activeVideo.channelTitle}</span>
             </div>
           </div>
-
-          <div className="flex items-center gap-4 shrink-0">
-            <button 
-              onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }}
-              className="w-12 h-12 rounded-full bg-white/10 text-white hover:bg-white/20 focusable border border-white/20 flex items-center justify-center outline-none"
-              tabIndex={0}
-            >
-              {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current ml-0.5" />}
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); saveCurrentProgress(); setActiveVideo(null); }}
-              className="w-10 h-10 rounded-full bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white transition-all focusable border border-red-600/30 flex items-center justify-center outline-none"
-              tabIndex={0}
-            >
+          <div className="flex items-center gap-3">
+            <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="rounded-full bg-white/10 text-white">
+              {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
+            </Button>
+            <Button size="icon" variant="destructive" onClick={(e) => { e.stopPropagation(); setActiveVideo(null); }} className="rounded-full">
               <X className="w-5 h-5" />
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {!isMinimized && (
-        <div className={cn(
-          "fixed bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-6 z-[5200] transition-all duration-1000",
-          isFullScreen ? "scale-110" : "scale-100"
-        )}>
-          <div className="flex items-center gap-4 liquid-glass p-5 rounded-full border-2 border-white/20 shadow-[0_50px_120px_rgba(0,0,0,1)]">
-            <button 
-              onClick={(e) => { e.stopPropagation(); setIsMinimized(true); }} 
-              className="w-16 h-16 rounded-full bg-white/10 border border-white/10 text-white focusable flex flex-col items-center justify-center gap-1 outline-none"
-              tabIndex={0}
-            >
-              <ChevronDown className="w-7 h-7" />
-              <span className="text-[9px] font-black uppercase tracking-widest">تصغير</span>
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); setIsFullScreen(!isFullScreen); }} 
-              className={cn(
-                "w-16 h-16 rounded-full border-2 transition-all flex flex-col items-center justify-center gap-1 focusable outline-none",
-                isFullScreen ? "bg-primary/30 border-primary text-white" : "bg-white/10 border-white/10 text-white"
-              )}
-              tabIndex={0}
-            >
-              <Monitor className="w-7 h-7" />
-              <span className="text-[9px] font-black uppercase tracking-widest">سينما</span>
-            </button>
-            <button 
-              onClick={(e) => { e.stopPropagation(); toggleSaveVideo(activeVideo); }}
-              className={cn("w-16 h-16 rounded-full border-2 transition-all focusable outline-none flex items-center justify-center", isSaved ? "bg-accent/30 border-accent text-accent" : "bg-white/10 border-white/10 text-white")}
-              tabIndex={0}
-            >
-              <Bookmark className={cn("w-7 h-7", isSaved && "fill-current")} />
-            </button>
-            <div className="w-px h-12 bg-white/20 mx-2" />
-            <button 
-              onClick={(e) => { e.stopPropagation(); saveCurrentProgress(); setActiveVideo(null); }} 
-              className="w-16 h-16 rounded-full shadow-3xl focusable border-2 border-red-500/20 bg-red-600/80 text-white flex items-center justify-center outline-none"
-              tabIndex={0}
-            >
-              <X className="w-9 h-9" />
-            </button>
+        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-4 z-[5200]">
+          <div className="flex items-center gap-3 liquid-glass p-4 rounded-full border-2 border-white/20 shadow-2xl">
+            <button onClick={() => setIsMinimized(true)} className="w-14 h-14 rounded-full bg-white/10 border border-white/10 text-white flex items-center justify-center focusable"><ChevronDown className="w-6 h-6" /></button>
+            <button onClick={() => setIsFullScreen(!isFullScreen)} className={cn("w-14 h-14 rounded-full border-2 transition-all flex items-center justify-center focusable", isFullScreen ? "bg-primary border-primary" : "bg-white/10 border-white/10")}><Monitor className="w-6 h-6" /></button>
+            <button onClick={() => toggleSaveVideo(activeVideo)} className={cn("w-14 h-14 rounded-full border-2 transition-all flex items-center justify-center focusable", isSaved ? "bg-accent border-accent" : "bg-white/10 border-white/10")}><Bookmark className={cn("w-6 h-6", isSaved && "fill-current")} /></button>
+            <div className="w-px h-10 bg-white/20 mx-1" />
+            <button onClick={() => setActiveVideo(null)} className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center focusable shadow-2xl"><X className="w-7 h-7" /></button>
           </div>
         </div>
       )}

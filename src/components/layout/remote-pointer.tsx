@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useCallback, useState } from "react";
@@ -12,45 +11,11 @@ export function RemotePointer() {
   const { toast } = useToast();
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [isVirtualCursorEnabled, setIsVirtualCursorEnabled] = useState(false);
-
-  // إجبار وضع التنقل (Navigation Mode) عبر وسوم الميتا لإخفاء مؤشر VIDAA
-  useEffect(() => {
-    const metaIds = ['vidaa-cursor-meta', 'vidaa-mode-meta', 'smart-nav-meta'];
-    
-    if (!isVirtualCursorEnabled) {
-      const metaTags = [
-        { name: 'cursor', content: 'disabled' },
-        { name: 'cursor-mode', content: 'navigation' },
-        { name: 'apple-mobile-web-app-capable', content: 'yes' }
-      ];
-
-      metaTags.forEach((tag, idx) => {
-        let meta = document.getElementById(metaIds[idx]) as HTMLMetaElement;
-        if (!meta) {
-          meta = document.createElement('meta');
-          meta.id = metaIds[idx];
-          meta.name = tag.name;
-          meta.content = tag.content;
-          document.head.appendChild(meta);
-        }
-      });
-      document.body.classList.add('no-cursor');
-    } else {
-      metaIds.forEach(id => {
-        const meta = document.getElementById(id);
-        if (meta) meta.remove();
-      });
-      document.body.classList.remove('no-cursor');
-    }
-  }, [isVirtualCursorEnabled]);
 
   const updatePointer = useCallback((el: HTMLElement) => {
-    // جعل الشاشة تتبع العنصر المحدد لضمان بقائه في بؤرة الرؤية (إخفاء الماوس الوهمي)
     el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
   }, []);
 
-  // حارس التركيز الدائم (Sticky Focus Guard)
   const ensureFocus = useCallback(() => {
     const active = document.activeElement;
     const isFocusable = active && active.classList.contains("focusable");
@@ -58,9 +23,7 @@ export function RemotePointer() {
     if (!isFocusable || active === document.body) {
       const allFocusables = Array.from(document.querySelectorAll(".focusable")) as HTMLElement[];
       if (allFocusables.length > 0) {
-        // الأولوية لأيقونة الميديا أو الرئيسية لإجبار المتصفح على إخفاء الفأرة
-        const dockTarget = document.querySelector('[data-nav-id="dock-Home"]') as HTMLElement || 
-                           document.querySelector('[data-nav-id="dock-Media"]') as HTMLElement;
+        const dockTarget = document.querySelector('[data-nav-id="dock-Home"]') as HTMLElement;
         if (dockTarget) {
           dockTarget.focus();
           updatePointer(dockTarget);
@@ -72,7 +35,6 @@ export function RemotePointer() {
     }
   }, [updatePointer]);
 
-  // خوارزمية حساب المسافة لـ Spatial Navigation (محرك الأسهم)
   const getDistance = (rect1: DOMRect, rect2: DOMRect, direction: string) => {
     const p1 = { x: rect1.left + rect1.width / 2, y: rect1.top + rect1.height / 2 };
     const p2 = { x: rect2.left + rect2.width / 2, y: rect2.top + rect2.height / 2 };
@@ -130,27 +92,9 @@ export function RemotePointer() {
   }, [updatePointer, ensureFocus]);
 
   useEffect(() => {
-    ensureFocus();
-    
-    // فحص دوري للتأكد من وجود تركيز نشط دائماً لإخفاء مؤشر VIDAA
-    const focusInterval = setInterval(ensureFocus, 2000);
+    const focusInterval = setInterval(ensureFocus, 3000);
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // مفتاح '1' لتبديل المؤشر الوهمي يدوياً عند الضرورة
-      if (e.key === "1") {
-        e.preventDefault();
-        setIsVirtualCursorEnabled(prev => {
-          const newState = !prev;
-          toast({
-            title: newState ? "المؤشر الوهمي مفعّل" : "المؤشر الوهمي معطّل",
-            description: newState ? "يمكنك استخدام الفأرة الآن" : "التنقل الذكي مفعل بالكامل (Focus Mode)",
-            duration: 3000,
-          });
-          return newState;
-        });
-        return;
-      }
-
       const standardMap: Record<string, string> = {
         "2": "ArrowUp", "4": "ArrowLeft", "6": "ArrowRight", "8": "ArrowDown",
         "ArrowUp": "ArrowUp", "ArrowDown": "ArrowDown", "ArrowLeft": "ArrowLeft", "ArrowRight": "ArrowRight"
@@ -189,58 +133,46 @@ export function RemotePointer() {
   }, [navigate, router, toast, ensureFocus]);
 
   return (
-    <>
+    <div className={cn(
+      "fixed bottom-24 right-12 z-[10000] pointer-events-none flex flex-col items-center gap-3 transition-all duration-500 scale-110",
+      isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+    )}>
       <div className={cn(
-        "fixed bottom-24 right-12 z-[10000] pointer-events-none flex flex-col items-center gap-3 transition-all duration-500 scale-110",
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+        "w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-200",
+        activeKey === "2" ? "bg-primary border-primary shadow-[0_0_40px_hsl(var(--primary))]" : "bg-black/60 border-white/10 backdrop-blur-xl"
       )}>
+        <ChevronUp className="w-8 h-8 text-white" />
+      </div>
+      
+      <div className="flex gap-3">
         <div className={cn(
           "w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-200",
-          activeKey === "2" ? "bg-primary border-primary shadow-[0_0_40px_hsl(var(--primary))]" : "bg-black/60 border-white/10 backdrop-blur-xl"
+          activeKey === "4" ? "bg-primary border-primary shadow-[0_0_40px_hsl(var(--primary))]" : "bg-black/60 border-white/10 backdrop-blur-xl"
         )}>
-          <ChevronUp className="w-8 h-8 text-white" />
-        </div>
-        
-        <div className="flex gap-3">
-          <div className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-200",
-            activeKey === "4" ? "bg-primary border-primary shadow-[0_0_40px_hsl(var(--primary))]" : "bg-black/60 border-white/10 backdrop-blur-xl"
-          )}>
-            <ChevronLeft className="w-8 h-8 text-white" />
-          </div>
-          
-          <div className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-200",
-            activeKey === '5' ? "bg-accent border-accent shadow-[0_0_40px_hsl(var(--accent))]" : "bg-black/60 border-white/10 backdrop-blur-xl"
-          )}>
-            <Circle className="w-8 h-8 text-white" />
-          </div>
-          
-          <div className={cn(
-            "w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-200",
-            activeKey === "6" ? "bg-primary border-primary shadow-[0_0_40px_hsl(var(--primary))]" : "bg-black/60 border-white/10 backdrop-blur-xl"
-          )}>
-            <ChevronRight className="w-8 h-8 text-white" />
-          </div>
+          <ChevronLeft className="w-8 h-8 text-white" />
         </div>
         
         <div className={cn(
           "w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-200",
-          activeKey === "8" ? "bg-primary border-primary shadow-[0_0_40px_hsl(var(--primary))]" : "bg-black/60 border-white/10 backdrop-blur-xl"
+          activeKey === '5' ? "bg-accent border-accent shadow-[0_0_40px_hsl(var(--accent))]" : "bg-black/60 border-white/10 backdrop-blur-xl"
         )}>
-          <ChevronDown className="w-8 h-8 text-white" />
+          <Circle className="w-8 h-8 text-white" />
+        </div>
+        
+        <div className={cn(
+          "w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-200",
+          activeKey === "6" ? "bg-primary border-primary shadow-[0_0_40px_hsl(var(--primary))]" : "bg-black/60 border-white/10 backdrop-blur-xl"
+        )}>
+          <ChevronRight className="w-8 h-8 text-white" />
         </div>
       </div>
-
+      
       <div className={cn(
-        "fixed top-8 left-8 z-[10001] px-4 py-2 rounded-full backdrop-blur-3xl border flex items-center gap-3 transition-all duration-500",
-        isVirtualCursorEnabled ? "bg-accent/20 border-accent/40" : "bg-primary/20 border-primary/40 opacity-30"
+        "w-14 h-14 rounded-2xl flex items-center justify-center border-2 transition-all duration-200",
+        activeKey === "8" ? "bg-primary border-primary shadow-[0_0_40px_hsl(var(--primary))]" : "bg-black/60 border-white/10 backdrop-blur-xl"
       )}>
-        {isVirtualCursorEnabled ? <MousePointer2 className="w-4 h-4 text-accent" /> : <MousePointer className="w-4 h-4 text-primary" />}
-        <span className="text-[10px] font-black uppercase tracking-widest text-white">
-          {isVirtualCursorEnabled ? "Virtual Mouse" : "Smart Remote"}
-        </span>
+        <ChevronDown className="w-8 h-8 text-white" />
       </div>
-    </>
+    </div>
   );
 }
