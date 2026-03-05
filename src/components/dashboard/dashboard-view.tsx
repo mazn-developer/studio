@@ -65,7 +65,7 @@ export function DashboardView() {
 
         {/* Right: Dynamic Widget Carousel */}
         <div className="md:col-span-4 flex flex-col gap-6 h-full relative">
-          <div className="flex-1 relative overflow-hidden focusable group bg-black/20 rounded-[2.5rem] shadow-2xl" tabIndex={0}>
+          <div className="flex-[1.8] relative overflow-hidden focusable group bg-black/20 rounded-[2.5rem] shadow-2xl" tabIndex={0}>
             <Carousel setApi={setApi} opts={{ loop: true }} className="w-full h-full">
               <CarouselContent className="h-full ml-0">
                 <CarouselItem className="pl-0 h-full flex items-center justify-center">
@@ -98,7 +98,7 @@ export function DashboardView() {
             </div>
           </div>
 
-          <div className="flex-1 glass-panel rounded-[2.5rem] relative overflow-hidden shadow-2xl focusable" tabIndex={0}>
+          <div className="flex-1 glass-panel rounded-[2.5rem] relative overflow-hidden shadow-2xl focusable max-h-[160px]" tabIndex={0}>
             <DateAndClockWidget />
           </div>
         </div>

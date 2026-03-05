@@ -1,4 +1,3 @@
-
 'use client';
 
 import { FOOTBALL_API_KEY, FOOTBALL_API_BASE_URL } from "./constants";
@@ -41,7 +40,8 @@ export async function fetchFootballData(type: 'today' | 'live' | 'yesterday' | '
       awayTeam: item.teams.away.name,
       homeLogo: item.teams.home.logo,
       awayLogo: item.teams.away.logo,
-      startTime: new Date(item.fixture.date).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      // CRITICAL FIX: Use en-US to ensure English digits (123) for mathematical splitting and avoid NaN
+      startTime: new Date(item.fixture.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
       status: item.fixture.status.short === 'FT' ? 'finished' : (['1H', '2H', 'HT'].includes(item.fixture.status.short) ? 'live' : 'upcoming'),
       score: { home: item.goals.home ?? 0, away: item.goals.away ?? 0 },
       minute: item.fixture.status.elapsed ?? 0,
@@ -63,14 +63,13 @@ export async function searchFootballTeams(query: string, leagueId?: string): Pro
     'x-rapidapi-host': 'v3.football.api-sports.io'
   };
 
-  // If a league is selected but no query, fetch ALL teams in that league
   let url = `${FOOTBALL_API_BASE_URL}/teams`;
   
   if (query.trim()) {
     url += `?search=${encodeURIComponent(query)}`;
     if (leagueId && leagueId !== 'all') url += `&league=${leagueId}`;
   } else if (leagueId && leagueId !== 'all') {
-    url += `?league=${leagueId}&season=2024`; // Default to current season
+    url += `?league=${leagueId}&season=2024`;
   } else {
     return [];
   }

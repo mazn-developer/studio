@@ -8,6 +8,7 @@ import { useMediaStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Clock, BellRing, Sparkles, Timer, Moon, Sun } from "lucide-react";
 import { FluidGlass } from "@/components/ui/fluid-glass";
+import { convertTo12Hour } from "@/lib/constants";
 
 const ATHKAR = [
   "سبحان الله وبحمده",
@@ -40,29 +41,22 @@ export function LiveMatchIsland() {
       const matches = await fetchFootballData('today');
       if (!matches?.length) { setTopMatches([]); return; }
 
-      // Core Priority Logic: Bell-Live > Fav-Live > Bell-Upcoming > Fav-Upcoming > Others-Live
-      const prioritized = [...matches]
-        .sort((a, b) => {
-          const aIsLive = a.status === 'live', bIsLive = b.status === 'live';
-          const aIsBelled = belledMatchIds.includes(a.id), bIsBelled = belledMatchIds.includes(b.id);
-          const aIsFav = favoriteTeams.some(t => t.id === a.homeTeamId || t.id === a.awayTeamId);
-          const bIsFav = favoriteTeams.some(t => t.id === b.homeTeamId || t.id === b.awayTeamId);
+      const prioritized = [...matches].sort((a, b) => {
+        const getScore = (match: Match) => {
+          const isLive = match.status === 'live';
+          const isBelled = belledMatchIds.includes(match.id);
+          const isFav = favoriteTeams.some(t => t.id === match.homeTeamId || t.id === match.awayTeamId);
 
-          const getScore = (isLive: boolean, isBelled: boolean, isFav: boolean) => {
-            if (isLive && isBelled) return 1000;
-            if (isLive && isFav) return 900;
-            if (!isLive && isBelled) return 800;
-            if (!isLive && isFav) return 700;
-            if (isLive) return 600;
-            return 0;
-          };
+          if (isLive && isBelled) return 1000;
+          if (isLive && isFav) return 950;
+          if (!isLive && isFav) return 900;
+          if (isLive) return 800;
+          if (!isLive && isBelled) return 700;
+          return 0;
+        };
 
-          const scoreA = getScore(aIsLive, aIsBelled, aIsFav);
-          const scoreB = getScore(bIsLive, bIsBelled, bIsFav);
-
-          return scoreB - scoreA; // Descending order
-        })
-        .slice(0, 3);
+        return getScore(b) - getScore(a);
+      }).slice(0, 3);
       setTopMatches(prioritized);
     } catch (e) {}
   }, [belledMatchIds, favoriteTeams]);
@@ -89,7 +83,6 @@ export function LiveMatchIsland() {
       const timeToMinutes = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
       let alert = null;
 
-      // 1. Critical Priority: Prayer Time Alerts
       for (let p of list) {
         const azanMins = timeToMinutes(p.time);
         const iqamahMins = azanMins + p.iqamah;
@@ -115,7 +108,6 @@ export function LiveMatchIsland() {
           break;
         }
 
-        // Evening Athkar after Asr Iqama
         if (p.name === "العصر") {
           const eveningAthkarTriggerMins = iqamahMins + 10;
           if (currentMinutes === eveningAthkarTriggerMins && currentSeconds < 10) {
@@ -127,7 +119,6 @@ export function LiveMatchIsland() {
 
       if (alert) { setActiveAlert(alert); return; }
 
-      // 2. High Priority: Timed Spiritual Events
       if (currentHour >= 7 && currentHour < 9) {
         setActiveAlert({ type: 'duha', name: 'صلاة الضحى', timeLabel: 'وقت صلاة الضحى - صلاة الأوابين', isCountingDown: false, icon: Sun });
         return;
@@ -165,7 +156,7 @@ export function LiveMatchIsland() {
             </div>
             <div className="flex flex-col text-right">
               <span className="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-xl">{activeAlert.name}</span>
-              <span className={cn("text-sm font-black uppercase tracking-widest", activeAlert.isCountingDown ? "text-primary" : "text-accent")}>{activeAlert.timeLabel}</span>
+              <span className={cn("text-sm font-black uppercase tracking-widest font-mono", activeAlert.isCountingDown ? "text-primary" : "text-accent")}>{activeAlert.timeLabel}</span>
             </div>
           </div>
           <span className="text-2xl animate-spin-slow relative z-10">✨</span>
@@ -204,16 +195,15 @@ export function LiveMatchIsland() {
                       <div className="flex items-center gap-4">
                         <img src={match.homeLogo} alt="" className="w-9 h-9 object-contain" />
                         <div className={cn("px-4 py-1.5 rounded-2xl border backdrop-blur-md min-w-[100px] flex justify-center items-center", isLive ? "bg-red-600/20 border-red-500/40" : "bg-primary/20 border-primary/40")}>
-                          {/* Corrected Arabic Score Flow: Home (Right) - Away (Left) */}
-                          <div className="flex flex-row-reverse items-center gap-2 font-black text-xl text-white" dir="ltr">
-                            <span>{isLive ? match.score?.home : match.startTime.split(':')[0]}</span>
+                          <div className="flex items-center gap-2 font-mono font-black text-xl text-white" dir="ltr">
+                            <span>{isLive ? match.score?.home : convertTo12Hour(match.startTime).split(' ')[0]}</span>
                             <span className="opacity-40">-</span>
-                            <span>{isLive ? match.score?.away : match.startTime.split(':')[1]}</span>
+                            <span>{isLive ? match.score?.away : ""}</span>
                           </div>
                         </div>
                         <img src={match.awayLogo} alt="" className="w-9 h-9 object-contain" />
                       </div>
-                      {isLive ? <span className="text-base font-black text-accent animate-pulse">{match.minute}'</span> : <Clock className="w-5 h-5 text-primary" />}
+                      {isLive ? <span className="text-base font-black text-accent animate-pulse font-mono">{match.minute}'</span> : <Clock className="w-5 h-5 text-primary" />}
                     </div>
                   ) : (
                     <div className="flex items-center justify-between w-full animate-in zoom-in-95 dir-rtl">
@@ -225,12 +215,16 @@ export function LiveMatchIsland() {
                       </div>
                       <div className="flex flex-col items-center gap-4">
                         <div className={cn("flex items-center gap-2 px-5 py-2 rounded-full border shadow-lg backdrop-blur-3xl", isLive ? "bg-red-600/30 border-red-500" : "bg-primary/30 border-primary")}>
-                          <span className="text-[10px] font-black uppercase tracking-[0.3em]">{isLive ? "LIVE" : "UPCOMING"}</span>
+                          <span className="text-[10px] font-black uppercase tracking-[0.3em] font-mono">{isLive ? "LIVE" : "UPCOMING"}</span>
                         </div>
-                        <div className="flex items-center gap-8" dir="ltr">
-                          <span className="text-8xl font-black text-white tabular-nums drop-shadow-2xl">{isLive ? match.score?.home : match.startTime.split(':')[0]}</span>
-                          <span className="text-4xl font-black text-primary animate-pulse tracking-tighter">:</span>
-                          <span className="text-8xl font-black text-white tabular-nums drop-shadow-2xl">{isLive ? match.score?.away : match.startTime.split(':')[1]}</span>
+                        <div className="flex items-center gap-8 font-mono" dir="ltr">
+                          <span className="text-8xl font-black text-white tabular-nums drop-shadow-2xl">{isLive ? match.score?.home : convertTo12Hour(match.startTime)}</span>
+                          {isLive && (
+                            <>
+                              <span className="text-4xl font-black text-primary animate-pulse tracking-tighter">:</span>
+                              <span className="text-8xl font-black text-white tabular-nums drop-shadow-2xl">{match.score?.away}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col items-center gap-3 w-32">
@@ -254,10 +248,10 @@ export function LiveMatchIsland() {
                     <img src={match.homeLogo} alt="" className="w-5 h-5 object-contain" />
                     <img src={match.awayLogo} alt="" className="w-5 h-5 object-contain" />
                   </div>
-                  <div className="flex items-center gap-0.5 text-[9px] font-black text-white mt-0.5" dir="ltr">
-                    <span>{isLive ? match.score?.home : match.startTime.split(':')[0]}</span>
+                  <div className="flex items-center gap-0.5 text-[9px] font-mono font-black text-white mt-0.5" dir="ltr">
+                    <span>{isLive ? match.score?.home : convertTo12Hour(match.startTime).split(':')[0]}</span>
                     <span>-</span>
-                    <span>{isLive ? match.score?.away : match.startTime.split(':')[1]}</span>
+                    <span>{isLive ? match.score?.away : ""}</span>
                   </div>
                </div>
             </div>

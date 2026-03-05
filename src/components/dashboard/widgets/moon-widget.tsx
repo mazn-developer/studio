@@ -17,6 +17,7 @@ export function MoonWidget() {
   const [loading, setLoading] = useState(true);
   const [rotation, setRotation] = useState(0);
   const [cycleIndex, setCycleIndex] = useState(0); // 0: Hijri, 1: Gregorian, 2: Temp
+  const [hijriDay, setHijriDay] = useState("");
 
   useEffect(() => {
     async function fetchMoonData() {
@@ -34,13 +35,30 @@ export function MoonWidget() {
         setLoading(false);
       }
     }
+
+    // Dynamic Hijri Day Calculation - Corrected for Umm al-Qura with Adjustment (Day - 1)
+    try {
+      const today = new Date();
+      const hijriFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-latn', {day: 'numeric'});
+      const dayNum = parseInt(hijriFormatter.format(today), 10);
+      
+      // APPLY ADJUSTMENT: HIJRI DAY - 1
+      const adjustedDay = dayNum - 1;
+      
+      const arabicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+      const formattedDay = adjustedDay.toString().split('').map(d => arabicDigits[parseInt(d)]).join('');
+      
+      setHijriDay(formattedDay);
+    } catch (e) {
+      setHijriDay("١٤"); // Fallback to 14 if system fails (assuming 15-1)
+    }
+
     fetchMoonData();
     const rotTimer = setInterval(() => setRotation(p => (p + 0.05) % 360), 100);
     const cycleTimer = setInterval(() => setCycleIndex(p => (p + 1) % 3), 5000);
     return () => { clearInterval(rotTimer); clearInterval(cycleTimer); };
   }, []);
 
-  const hijriDay = "١٤";
   const gregorianDay = new Date().getDate().toString();
   const temp = "28°";
 
@@ -54,7 +72,6 @@ export function MoonWidget() {
             </div>
           ) : (
             <div className="relative w-32 h-32 mx-auto">
-              {/* Dynamic Scaling for Gregorian/Temp */}
               <div className="absolute inset-0 flex items-center justify-center z-20 font-black text-6xl pointer-events-none transition-all duration-1000"
                 style={{ 
                   WebkitTextStroke: '0.7px rgba(255,255,255,0.6)', 

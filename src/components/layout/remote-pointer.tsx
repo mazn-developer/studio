@@ -4,10 +4,12 @@
 import { useEffect, useCallback, useState } from "react";
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePathname } from "next/navigation";
 
 export function RemotePointer() {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const pathname = usePathname();
 
   const navigate = useCallback((direction: string) => {
     const focusables = Array.from(document.querySelectorAll(".focusable")) as HTMLElement[];
@@ -16,11 +18,11 @@ export function RemotePointer() {
     const current = document.activeElement as HTMLElement;
     const isCurrentFocusable = current && current.classList.contains("focusable");
     
-    // Smart Auto-Focus if nothing focused
+    // Smart Auto-Focus if nothing focused or if focus is lost
     if (!isCurrentFocusable) {
-      // Try to focus dock first, or first visible item
-      const first = focusables.find(el => el.dataset.navId?.startsWith('dock-')) || focusables[0];
-      first?.focus();
+      // Find first visible content item (preferring items NOT in the dock first)
+      const contentItem = focusables.find(el => !el.dataset.navId?.startsWith('dock-')) || focusables[0];
+      contentItem?.focus();
       return;
     }
 
@@ -69,6 +71,14 @@ export function RemotePointer() {
     }
   }, []);
 
+  // Handle auto-focus on route change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navigate(''); // Trigger auto-focus logic
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [pathname, navigate]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const standardMap: Record<string, string> = {
@@ -101,9 +111,7 @@ export function RemotePointer() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    // Initial Smart Focus after mount
-    const timer = setTimeout(() => navigate(''), 1500);
-    return () => { window.removeEventListener("keydown", handleKeyDown); clearTimeout(timer); };
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [navigate]);
 
   return (

@@ -31,6 +31,12 @@ export function FootballView() {
       const result = await fetchFootballData(view === 'live' ? 'live' : view === 'yesterday' ? 'yesterday' : view === 'tomorrow' ? 'tomorrow' : 'today');
       setMatches(result);
       setError(null);
+      
+      // Auto-focus logic for first match after loading
+      setTimeout(() => {
+        const firstMatch = document.querySelector('.match-card-item') as HTMLElement;
+        if (firstMatch) firstMatch.focus();
+      }, 500);
     } catch (err: any) {
       setError("فشل الاتصال بمزود البيانات. يرجى المحاولة لاحقاً.");
     } finally {
@@ -60,13 +66,11 @@ export function FootballView() {
     }
 
     return result.sort((a, b) => {
-      // 1. الجرس (المباريات المفضلة المحددة يدوياً)
       const aIsBelled = isBelled(a.id);
       const bIsBelled = isBelled(b.id);
       if (aIsBelled && !bIsBelled) return -1;
       if (!aIsBelled && bIsBelled) return 1;
 
-      // 2. المباريات الكبرى (أندية كبرى ضد بعضها أو دوريات كبرى)
       const aIsMajor = MAJOR_CLUBS_IDS.includes(a.homeTeamId) || MAJOR_CLUBS_IDS.includes(a.awayTeamId);
       const bIsMajor = MAJOR_CLUBS_IDS.includes(b.homeTeamId) || MAJOR_CLUBS_IDS.includes(b.awayTeamId);
       
@@ -76,7 +80,6 @@ export function FootballView() {
       if ((aIsMajor || aInMajorLeague) && !(bIsMajor || bInMajorLeague)) return -1;
       if (!(aIsMajor || aInMajorLeague) && (bIsMajor || bInMajorLeague)) return 1;
 
-      // 3. الفرق المفضلة للمستخدم
       const aIsFav = isFavTeam(a.homeTeamId) || isFavTeam(a.awayTeamId);
       const bIsFav = isFavTeam(b.homeTeamId) || isFavTeam(b.awayTeamId);
       if (aIsFav && !bIsFav) return -1;
@@ -95,6 +98,7 @@ export function FootballView() {
     return (
       <Card 
         key={match.id} 
+        data-nav-id={`match-${match.id}`}
         className={cn(
           "relative match-card-item overflow-hidden transition-all duration-500 border-white/5 group focusable",
           isBelledMatch 

@@ -4,7 +4,7 @@
 import { useMemo, useEffect, useState } from "react";
 import { convertTo12Hour } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { Timer, Sparkles } from "lucide-react";
+import { Timer } from "lucide-react";
 import { useMediaStore } from "@/lib/store";
 
 export function PrayerTimelineWidget() {
@@ -75,34 +75,34 @@ export function PrayerTimelineWidget() {
               )}
               
               <div className={cn(
-                "flex flex-col items-center p-4 rounded-3xl transition-all duration-700 border-2 border-transparent relative overflow-hidden",
+                "flex flex-col items-center p-4 rounded-3xl transition-all duration-700 border-2 border-transparent relative overflow-hidden min-w-[100px]",
                 isNext && "bg-accent/20 border-accent/60 ring-4 ring-accent/30 shadow-[0_0_60px_rgba(65,184,131,0.8)]"
               )}>
                 {isNext && (
                   <div className="absolute inset-0 bg-gradient-to-t from-accent/20 via-transparent to-transparent animate-pulse" />
                 )}
                 <span className={cn(
-                  "text-[11px] font-black uppercase tracking-[0.3em] mb-1 relative z-10",
-                  isNext ? "text-accent animate-pulse" : "text-white/40"
+                  "text-base font-black uppercase tracking-[0.2em] mb-1 relative z-10",
+                  isNext ? "text-accent animate-pulse" : "text-white/60"
                 )}>
                   {prayer.name}
                 </span>
                 <span className={cn(
-                  "text-3xl font-black tracking-tighter relative z-10",
-                  isNext ? "text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.9)]" : "text-white/60"
+                  "text-xl font-black tracking-tighter relative z-10 tabular-nums",
+                  isNext ? "text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.9)]" : "text-white/40"
                 )}>
-                  {convertTo12Hour(prayer.time)}
+                  {convertTo12Hour(prayer.time).replace(/\s?[AP]M/i, '')}
                 </span>
               </div>
 
               {isNext && (
                 <div className="flex flex-col border-l-4 border-accent/80 pl-8 py-3 animate-in fade-in slide-in-from-left-6 duration-1000 bg-accent/25 rounded-r-[2.5rem] px-8 shadow-[0_0_50px_rgba(65,184,131,0.5)] ring-2 ring-accent/20">
                   <div className="flex items-center gap-3">
-                    <Timer className="w-6 h-6 text-accent" />
-                    <span className="text-[12px] font-black text-accent uppercase tracking-[0.4em] drop-shadow-[0_0_15px_rgba(65,184,131,0.7)]">الإقامة المشعة</span>
+                    <Timer className="w-5 h-5 text-accent" />
+                    <span className="text-[11px] font-black text-accent uppercase tracking-[0.3em] drop-shadow-[0_0_15px_rgba(65,184,131,0.7)]">الإقامة</span>
                   </div>
-                  <span className="text-4xl font-black text-accent drop-shadow-[0_0_30px_rgba(16,185,129,1)] mt-1">
-                    {convertTo12Hour(prayer.iqamahTime)}
+                  <span className="text-3xl font-black text-accent drop-shadow-[0_0_30px_rgba(16,185,129,1)] mt-1 tabular-nums">
+                    {convertTo12Hour(prayer.iqamahTime).replace(/\s?[AP]M/i, '')}
                   </span>
                 </div>
               )}

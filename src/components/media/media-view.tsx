@@ -108,6 +108,11 @@ export function MediaView() {
       setVideoResults(results);
       setShowReciterGrid(false);
       setShowSurahGrid(false);
+      // Auto-focus logic for first search result
+      setTimeout(() => {
+        const firstResult = document.querySelector('.video-result-card') as HTMLElement;
+        if (firstResult) firstResult.focus();
+      }, 500);
     } catch (error) {
       console.error("Video search failed", error);
     } finally {
@@ -183,6 +188,11 @@ export function MediaView() {
     try {
       const videos = await fetchChannelVideos(channel.channelid);
       setChannelVideos(videos);
+      // Auto-focus logic for first channel video
+      setTimeout(() => {
+        const firstVideo = document.querySelector('.channel-video-card') as HTMLElement;
+        if (firstVideo) firstVideo.focus();
+      }, 500);
     } finally {
       setIsLoadingVideos(false);
     }
@@ -376,7 +386,6 @@ export function MediaView() {
         )}
       </header>
 
-      {/* Quick Live Channels Section */}
       <section className="space-y-6">
         <h2 className="text-2xl font-black text-white flex items-center gap-3">
           <Zap className="w-6 h-6 text-yellow-500 fill-current" /> قنوات مباشرة مقترحة

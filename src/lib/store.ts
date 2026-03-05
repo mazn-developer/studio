@@ -43,6 +43,8 @@ export interface IptvChannel {
   stream_icon: string;
   category_id: string;
   starred?: boolean;
+  url?: string; // For direct web links
+  type?: 'iptv' | 'web';
 }
 
 interface MediaState {
@@ -55,12 +57,16 @@ interface MediaState {
   belledMatchIds: string[];
   favoriteIptvChannels: IptvChannel[];
   iptvFormat: 'ts' | 'm3u8';
+  iptvPlaylist: IptvChannel[];
+  iptvPlaylistIndex: number;
   prayerTimes: any[];
   reminders: Reminder[];
   mapSettings: MapSettings;
   aiSuggestions: any[];
   activeVideo: YouTubeVideo | null;
   activeIptv: IptvChannel | null;
+  playlist: YouTubeVideo[];
+  playlistIndex: number;
   isPlaying: boolean;
   isMinimized: boolean;
   isFullScreen: boolean;
@@ -79,10 +85,16 @@ interface MediaState {
   toggleBelledMatch: (matchId: string) => void;
   toggleFavoriteIptvChannel: (channel: IptvChannel) => void;
   setIptvFormat: (format: 'ts' | 'm3u8') => void;
+  setIptvPlaylist: (channels: IptvChannel[], index: number) => void;
+  nextIptvChannel: () => void;
+  prevIptvChannel: () => void;
   updateMapSettings: (settings: Partial<MapSettings>) => void;
   setAiSuggestions: (suggestions: any[]) => void;
   setActiveVideo: (video: YouTubeVideo | null) => void;
   setActiveIptv: (channel: IptvChannel | null) => void;
+  setPlaylist: (videos: YouTubeVideo[]) => void;
+  nextTrack: () => void;
+  prevTrack: () => void;
   updateVideoProgress: (videoId: string, progress: number) => void;
   setIsPlaying: (playing: boolean) => void;
   setIsMinimized: (minimized: boolean) => void;
@@ -118,12 +130,16 @@ export const useMediaStore = create<MediaState>()(
       belledMatchIds: [],
       favoriteIptvChannels: [],
       iptvFormat: 'ts',
+      iptvPlaylist: [],
+      iptvPlaylistIndex: 0,
       prayerTimes: prayerTimesData,
       reminders: [],
-      mapSettings: { zoom: 19.5, tilt: 65, carScale: 1.05, backgroundIndex: 0 },
+      mapSettings: { zoom: 20.0, tilt: 65, carScale: 1.02, backgroundIndex: 0 },
       aiSuggestions: [],
       activeVideo: null,
       activeIptv: null,
+      playlist: [],
+      playlistIndex: 0,
       isPlaying: false,
       isMinimized: false,
       isFullScreen: false,
@@ -268,6 +284,30 @@ export const useMediaStore = create<MediaState>()(
 
       setIptvFormat: (format) => set({ iptvFormat: format }),
 
+      setIptvPlaylist: (channels, index) => set({ iptvPlaylist: channels, iptvPlaylistIndex: index }),
+
+      nextIptvChannel: () => {
+        set((state) => {
+          if (state.iptvPlaylist.length === 0) return {};
+          const nextIdx = (state.iptvPlaylistIndex + 1) % state.iptvPlaylist.length;
+          return {
+            iptvPlaylistIndex: nextIdx,
+            activeIptv: state.iptvPlaylist[nextIdx]
+          };
+        });
+      },
+
+      prevIptvChannel: () => {
+        set((state) => {
+          if (state.iptvPlaylist.length === 0) return {};
+          const prevIdx = (state.iptvPlaylistIndex - 1 + state.iptvPlaylist.length) % state.iptvPlaylist.length;
+          return {
+            iptvPlaylistIndex: prevIdx,
+            activeIptv: state.iptvPlaylist[prevIdx]
+          };
+        });
+      },
+
       updateMapSettings: (settings) => {
         set((state) => ({ mapSettings: { ...state.mapSettings, ...settings } }));
       },
@@ -304,6 +344,38 @@ export const useMediaStore = create<MediaState>()(
           isPlaying: !!channel,
           isMinimized: false, 
           isFullScreen: !!channel
+        });
+      },
+      setPlaylist: (videos) => {
+        const shuffled = [...videos].sort(() => Math.random() - 0.5);
+        set({ 
+          playlist: shuffled, 
+          playlistIndex: 0,
+          activeVideo: shuffled[0],
+          activeIptv: null,
+          isPlaying: true,
+          isMinimized: false,
+          isFullScreen: true
+        });
+      },
+      nextTrack: () => {
+        set((state) => {
+          if (state.playlist.length === 0) return {};
+          const nextIdx = (state.playlistIndex + 1) % state.playlist.length;
+          return {
+            playlistIndex: nextIdx,
+            activeVideo: state.playlist[nextIdx]
+          };
+        });
+      },
+      prevTrack: () => {
+        set((state) => {
+          if (state.playlist.length === 0) return {};
+          const prevIdx = (state.playlistIndex - 1 + state.playlist.length) % state.playlist.length;
+          return {
+            playlistIndex: prevIdx,
+            activeVideo: state.playlist[prevIdx]
+          };
         });
       },
       setIsPlaying: (playing) => set({ isPlaying: playing }),
@@ -381,7 +453,7 @@ if (typeof window !== "undefined") {
       });
       if (iptvRes.ok) {
         const data = await iptvRes.json();
-        if (data.record && Array.isArray(data.record)) {
+        if (Array.isArray(data.record)) {
           useMediaStore.setState({ favoriteIptvChannels: data.record });
         }
       }

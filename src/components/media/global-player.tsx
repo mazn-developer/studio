@@ -2,16 +2,12 @@
 "use client";
 
 import { useMediaStore } from "@/lib/store";
-import { X, Minimize2, Bookmark, Monitor, ChevronDown, Play, Pause, Tv, FileType } from "lucide-react";
+import { X, Minimize2, Bookmark, Monitor, ChevronDown, Play, Pause, Tv, FileType, SkipForward, SkipBack } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Hls from "hls.js";
 
-/**
- * GlobalVideoPlayer - Highly specialized IPTV & YouTube Hybrid Engine.
- * Optimized for automotive environment with robust stream handling and format switching.
- */
 export function GlobalVideoPlayer() {
   const { 
     activeVideo, 
@@ -21,6 +17,12 @@ export function GlobalVideoPlayer() {
     isFullScreen,
     videoProgress,
     iptvFormat,
+    playlist,
+    iptvPlaylist,
+    nextTrack,
+    prevTrack,
+    nextIptvChannel,
+    prevIptvChannel,
     setActiveVideo, 
     setActiveIptv,
     setIsPlaying, 
@@ -38,7 +40,6 @@ export function GlobalVideoPlayer() {
 
   useEffect(() => {
     setMounted(true);
-    // Load YouTube API if not present
     if (!(window as any).YT) {
       const tag = document.createElement('script');
       tag.src = "https://www.youtube.com/iframe_api";
@@ -58,7 +59,6 @@ export function GlobalVideoPlayer() {
     };
   }, []);
 
-  // Specialized YouTube Logic
   useEffect(() => {
     if (!activeVideo || !mounted || activeIptv) return;
     const startSeconds = videoProgress[activeVideo.id] || 0;
@@ -78,15 +78,23 @@ export function GlobalVideoPlayer() {
           rel: 0,
           start: Math.floor(startSeconds),
           enablejsapi: 1,
+          mute: 0,
           origin: window.location.origin
         },
         events: {
+          onReady: (event: any) => {
+            event.target.playVideo();
+            event.target.unMute();
+          },
           onStateChange: (event: any) => {
             if (event.data === 1) setIsPlaying(true);
             else if (event.data === 2) setIsPlaying(false);
+            else if (event.data === 0 && playlist.length > 0) {
+              nextTrack();
+            }
           },
-          onError: (e: any) => {
-            console.error("YouTube Player Error:", e);
+          onError: () => {
+            if (playlist.length > 0) nextTrack();
           }
         }
       });
@@ -99,15 +107,14 @@ export function GlobalVideoPlayer() {
     }
   }, [activeVideo?.id, mounted, activeIptv]);
 
-  // Specialized IPTV Engine - Multi-format HLS.js Integration
   useEffect(() => {
     if (activeIptv && videoTagRef.current) {
-      const extension = iptvFormat === 'm3u8' ? 'm3u8' : 'ts';
-      const iptvUrl = `http://ban.programing-services.com:2095/live/W87d737/Pd37qj34/${activeIptv.stream_id}.${extension}`;
+      if (activeIptv.type === 'web') return; 
 
-      if (hlsRef.current) {
-        hlsRef.current.destroy();
-      }
+      const extension = iptvFormat === 'm3u8' ? 'm3u8' : 'ts';
+      const iptvUrl = `http://playstop.watch:2095/live/W87d737/Pd37qj34/${activeIptv.stream_id}.${extension}`;
+
+      if (hlsRef.current) hlsRef.current.destroy();
 
       const video = videoTagRef.current;
 
@@ -116,53 +123,33 @@ export function GlobalVideoPlayer() {
           enableWorker: true,
           lowLatencyMode: true,
           backBufferLength: 90,
-          maxBufferLength: 30,
-          manifestLoadingMaxRetry: 10,
         });
-        
         hls.loadSource(iptvUrl);
         hls.attachMedia(video);
-        
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().catch(e => console.warn("Auto-play blocked", e));
+          video.muted = false;
+          video.play().catch(() => {
+            video.muted = true;
+            video.play();
+          });
         });
-
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) {
-            switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR:
-                hls.startLoad();
-                break;
-              case Hls.ErrorTypes.MEDIA_ERROR:
-                hls.recoverMediaError();
-                break;
-              default:
-                hls.destroy();
-                break;
-            }
-          }
-        });
-
         hlsRef.current = hls;
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Fallback for Safari/Native HLS
-        video.src = iptvUrl;
-        video.onloadedmetadata = () => {
-          video.play().catch(e => console.warn("Native auto-play blocked", e));
-        };
       } else {
-        // Direct source for other formats (.ts)
         video.src = iptvUrl;
-        video.load();
-        video.play().catch(e => console.warn("Direct source auto-play blocked", e));
+        video.muted = false;
+        video.play().catch(() => {
+          video.muted = true;
+          video.play();
+        });
       }
     }
-  }, [activeIptv?.stream_id, iptvFormat]);
+  }, [activeIptv?.stream_id, iptvFormat, activeIptv?.type]);
 
   if (!mounted || (!activeVideo && !activeIptv)) return null;
 
   const isSaved = activeVideo ? savedVideos.some(v => v.id === activeVideo.id) : false;
-  const extension = iptvFormat === 'm3u8' ? 'm3u8' : 'ts';
+  const isWebStream = activeIptv?.type === 'web';
+  const hasPlaylist = (activeVideo && playlist.length > 0) || (activeIptv && iptvPlaylist.length > 0);
 
   return (
     <div 
@@ -172,31 +159,34 @@ export function GlobalVideoPlayer() {
           ? "bottom-12 left-1/2 -translate-x-1/2 w-[500px] h-28 rounded-[2.5rem] liquid-glass cursor-pointer" 
           : isFullScreen
             ? "inset-0 w-full h-full bg-black"
-            : "bottom-8 right-4 w-[50vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95 left-auto translate-x-0"
+            : "bottom-8 right-4 w-[50vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95"
       )}
-      style={{ position: 'fixed' }}
       onClick={() => isMinimized && setIsFullScreen(true)}
     >
-      <div className={cn(
-        "absolute inset-0 transition-all duration-700 overflow-hidden rounded-[inherit]",
-        isMinimized ? "opacity-0 pointer-events-none" : "opacity-100"
-      )}>
+      <div className={cn("absolute inset-0 transition-all duration-700 overflow-hidden rounded-[inherit]", isMinimized ? "opacity-0" : "opacity-100")}>
         {activeVideo && !activeIptv ? (
           <div id="youtube-player-element" className="w-full h-full bg-black"></div>
         ) : activeIptv ? (
           <div className="w-full h-full relative bg-black">
-            <video 
-              ref={videoTagRef}
-              autoPlay
-              controls
-              className="w-full h-full object-contain"
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-            />
-            {/* Context Overlay for IPTV Info */}
-            <div className="absolute top-8 right-8 bg-black/60 backdrop-blur-3xl px-6 py-3 rounded-full border border-white/10 pointer-events-none animate-in fade-in duration-1000">
+            {isWebStream ? (
+              <iframe 
+                src={`${activeIptv.url}${activeIptv.url?.includes('?') ? '&' : '?'}autoplay=1&mute=0&modestbranding=1`} 
+                className="w-full h-full border-none" 
+                allow="autoplay; fullscreen" 
+              />
+            ) : (
+              <video 
+                ref={videoTagRef} 
+                autoPlay 
+                controls 
+                className="w-full h-full object-contain" 
+                onPlay={() => setIsPlaying(true)} 
+                onPause={() => setIsPlaying(false)} 
+              />
+            )}
+            <div className="absolute top-8 right-8 bg-black/60 backdrop-blur-3xl px-6 py-3 rounded-full border border-white/10 pointer-events-none">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
+                <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-xs font-black text-white uppercase tracking-widest">{activeIptv.name}</span>
               </div>
             </div>
@@ -211,17 +201,33 @@ export function GlobalVideoPlayer() {
               {activeVideo ? (
                 <Image src={activeVideo.thumbnail} alt="" fill className="object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-zinc-800"><Tv className="w-6 h-6 text-emerald-500" /></div>
+                <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                  <img src={activeIptv?.stream_icon} className="w-8 h-8 object-contain" alt="" />
+                </div>
               )}
             </div>
             <div className="flex flex-col min-w-0 text-right">
               <h4 className="text-base font-black text-white truncate">{activeVideo?.title || activeIptv?.name}</h4>
-              <span className="text-[9px] text-accent font-black uppercase tracking-widest">
-                {activeVideo ? activeVideo.channelTitle : `IPTV Transmission (${extension.toUpperCase()})`}
-              </span>
+              <span className="text-[9px] text-accent font-black uppercase tracking-widest">Active Feed</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {hasPlaylist && (
+              <>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); activeVideo ? prevTrack() : prevIptvChannel(); }} 
+                  className="w-10 h-10 rounded-full bg-white/5 text-white flex items-center justify-center border border-white/10 focusable"
+                >
+                  <SkipBack className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); activeVideo ? nextTrack() : nextIptvChannel(); }} 
+                  className="w-10 h-10 rounded-full bg-white/5 text-white flex items-center justify-center border border-white/10 focusable"
+                >
+                  <SkipForward className="w-5 h-5" />
+                </button>
+              </>
+            )}
             <button onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/10 focusable">
               {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
             </button>
@@ -233,31 +239,37 @@ export function GlobalVideoPlayer() {
       )}
 
       {!isMinimized && (
-        <div className={cn(
-          "fixed bottom-12 z-[5200] flex items-center gap-4",
-          isFullScreen ? "left-1/2 -translate-x-1/2" : "right-12"
-        )}>
+        <div className={cn("fixed bottom-12 z-[5200] flex items-center gap-4", isFullScreen ? "left-1/2 -translate-x-1/2" : "right-12")}>
           <div className="flex items-center gap-3 liquid-glass p-4 rounded-full border-2 border-white/20 shadow-2xl">
-            {activeIptv && (
-              <button 
-                onClick={(e) => { e.stopPropagation(); setIptvFormat(iptvFormat === 'ts' ? 'm3u8' : 'ts'); }} 
-                className={cn(
-                  "w-14 h-14 rounded-full border-2 transition-all flex flex-col items-center justify-center focusable",
-                  iptvFormat === 'm3u8' ? "bg-emerald-600 border-emerald-400 shadow-[0_0_20px_#10b981]" : "bg-white/10 border-white/10"
-                )}
-                title="Format Switch (TS/M3U8)"
-              >
+            {activeIptv && !isWebStream && (
+              <button onClick={(e) => { e.stopPropagation(); setIptvFormat(iptvFormat === 'ts' ? 'm3u8' : 'ts'); }} className={cn("w-14 h-14 rounded-full border-2 flex flex-col items-center justify-center focusable", iptvFormat === 'm3u8' ? "bg-emerald-600 border-emerald-400" : "bg-white/10 border-white/10")}>
                 <FileType className="w-5 h-5 text-white" />
                 <span className="text-[8px] font-black text-white">{iptvFormat.toUpperCase()}</span>
               </button>
             )}
+            {hasPlaylist && (
+              <>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); activeVideo ? prevTrack() : prevIptvChannel(); }} 
+                  className="w-14 h-14 rounded-full bg-white/10 border border-white/10 text-white flex items-center justify-center focusable"
+                >
+                  <SkipBack className="w-6 h-6" />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); activeVideo ? nextTrack() : nextIptvChannel(); }} 
+                  className="w-14 h-14 rounded-full bg-white/10 border border-white/10 text-white flex items-center justify-center focusable"
+                >
+                  <SkipForward className="w-6 h-6" />
+                </button>
+              </>
+            )}
             <button onClick={() => setIsMinimized(true)} className="w-14 h-14 rounded-full bg-white/10 border border-white/10 text-white flex items-center justify-center focusable"><ChevronDown className="w-6 h-6" /></button>
-            <button onClick={() => setIsFullScreen(!isFullScreen)} className={cn("w-14 h-14 rounded-full border-2 transition-all flex items-center justify-center focusable", isFullScreen ? "bg-primary border-primary" : "bg-white/10 border-white/10")}><Monitor className="w-6 h-6" /></button>
+            <button onClick={() => setIsFullScreen(!isFullScreen)} className={cn("w-14 h-14 rounded-full border-2 flex items-center justify-center focusable", isFullScreen ? "bg-primary border-primary" : "bg-white/10 border-white/10")}><Monitor className="w-6 h-6" /></button>
             {activeVideo && (
-              <button onClick={() => toggleSaveVideo(activeVideo)} className={cn("w-14 h-14 rounded-full border-2 transition-all flex items-center justify-center focusable", isSaved ? "bg-accent border-accent" : "bg-white/10 border-white/10")}><Bookmark className={cn("w-6 h-6", isSaved && "fill-current")} /></button>
+              <button onClick={() => toggleSaveVideo(activeVideo)} className={cn("w-14 h-14 rounded-full border-2 flex items-center justify-center focusable", isSaved ? "bg-accent border-accent" : "bg-white/10 border-white/10")}><Bookmark className={cn("w-6 h-6", isSaved && "fill-current")} /></button>
             )}
             <div className="w-px h-10 bg-white/20 mx-1" />
-            <button onClick={() => { setActiveVideo(null); setActiveIptv(null); }} className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center focusable shadow-2xl"><X className="w-7 h-7" /></button>
+            <button onClick={() => { setActiveVideo(null); setActiveIptv(null); }} className="w-14 h-14 rounded-full bg-red-600 text-white flex items-center justify-center focusable"><X className="w-7 h-7" /></button>
           </div>
         </div>
       )}

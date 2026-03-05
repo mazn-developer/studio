@@ -1,4 +1,3 @@
-
 export const AI_ASSISTANT_API_KEY = 'AIzaSyBMmtON9ww4dJxMHrl1wKyWTvI0ipJXJws'; 
 export const WEATHER_API_KEY = '7acefc26deee4904a2393917252207'; 
 export const GOOGLE_MAPS_API_KEY = 'AIzaSyBRqAHJ2elbE_Z7NXXYC50XZpqi6HbG6Rk';
@@ -20,7 +19,7 @@ export const JSONBIN_CLUBS_BIN_ID = '699d8c2aae596e708f452936';
 export const JSONBIN_SAVED_VIDEOS_BIN_ID = '68e4ac2e43b1c97be95d24af';
 export const JSONBIN_PRAYER_TIMES_BIN_ID = '69a00f6eae596e708f4b7291';
 export const JSONBIN_RECITERS_BIN_ID = '6909c1cd43b1c97be997b522';
-export const JSONBIN_IPTV_FAVS_BIN_ID = '69a87b8bd0ea881f40eeec0c'; // New ID for IPTV Favorites
+export const JSONBIN_IPTV_FAVS_BIN_ID = '69a87b8bd0ea881f40eeec0c';
 export const JSONBIN_ACCESS_KEY_CHANNELS = '$2a$10$J8o3WrPtnqmKAd///uDw6.BOWnGIBekHFOImbeEZZwsJ/h/XPbVUy';
 
 export const SURAHS_LIST = [
@@ -72,8 +71,17 @@ export function convertTo12Hour(time24h: string | undefined): string {
     if (!time24h || typeof time24h !== 'string' || time24h === '--:--') {
         return time24h || '--:--';
     }
-    const [hours24, minutes] = time24h.split(':').map(str => parseInt(str, 10));
+    // Correctly split and parse numbers, ensuring it works even if digits are weird
+    const parts = time24h.split(':');
+    if (parts.length < 2) return time24h;
+    
+    const hours24 = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10);
+    
+    if (isNaN(hours24) || isNaN(minutes)) return time24h;
+
     let hours12 = hours24 % 12;
     hours12 = hours12 ? hours12 : 12;
-    return `${hours12}:${minutes.toString().padStart(2, '0')}`;
+    const ampm = hours24 >= 12 ? 'PM' : 'AM';
+    return `${hours12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
 }

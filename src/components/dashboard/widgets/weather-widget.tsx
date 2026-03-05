@@ -8,7 +8,8 @@ export function WeatherWidget() {
   const [weather, setWeather] = useState<any>(null);
 
   useEffect(() => {
-    fetch(`https://api.weatherapi.com/v1/forecast.json?key=${WEATHER_API_KEY}&q=Salalah&days=1&aqi=no&lang=ar`)
+    // USING SPECIFIED API KEY AND ARABIC LANGUAGE
+    fetch(`https://api.weatherapi.com/v1/forecast.json?key=${WEATHER_API_KEY}&q=Salalah&days=1&aqi=yes&lang=ar`)
       .then(res => res.json())
       .then(data => {
         if (data && data.current) setWeather(data);
