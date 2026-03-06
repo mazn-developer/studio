@@ -22,12 +22,10 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-// Priority Live Channels Data
 const PRIORITY_LIVE_CHANNELS = [
-  { id: "UC_vbeChFz6SizVSA_p6_InA", name: "قناة القرآن الكريم", type: "live" },
-  { id: "UCZ_vbeChFz6SizVSA_p6_InA", name: "beIN Sports الإخبارية", type: "live" },
-  { id: "UCfiwzLy-8yKzIbsmZTzxDgw", name: "قناة الجزيرة", type: "live" },
-  { id: "UC-vbeChFz6SizVSA_p6_InA", name: "قناة السنة النبوية", type: "live" }
+  { id: "UCos52azQNBgW63_9uDJoPDA", name: "قناة القرآن الكريم", type: "live" },
+  { id: "UCfiwzLy-8yKzIbsmZTzxDgw", name: "قناة الجزيرة الإخبارية", type: "live" },
+  { id: "UCJUCcJUeh0Cz2xyKwkw5Q1w", name: "beIN Sports", type: "live" },
 ];
 
 export function MediaView() {
@@ -38,7 +36,8 @@ export function MediaView() {
     savedVideos, 
     toggleSaveVideo, 
     setActiveVideo,
-    toggleStarChannel
+    toggleStarChannel,
+    isFullScreen
   } = useMediaStore();
 
   const searchParams = useSearchParams();
@@ -52,14 +51,12 @@ export function MediaView() {
   const [isLoadingVideos, setIsLoadingVideos] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
-  // Quran Selection State
   const [reciters, setReciters] = useState<any[]>([]);
   const [selectedReciter, setSelectedReciter] = useState<any>(null);
   const [isLoadingReciters, setIsLoadingReciters] = useState(false);
   const [showReciterGrid, setShowReciterGrid] = useState(false);
   const [showSurahGrid, setShowSurahGrid] = useState(false);
 
-  // URL Adding State
   const [urlInput, setUrlInput] = useState("");
   const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
   const [isAddingByUrl, setIsAddingByUrl] = useState(false);
@@ -69,7 +66,6 @@ export function MediaView() {
   const [isSearchingChannels, setIsSearchingChannels] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Sort channels: Starred first
   const sortedChannels = useMemo(() => {
     return [...favoriteChannels].sort((a, b) => {
       if (a.starred && !b.starred) return -1;
@@ -77,6 +73,14 @@ export function MediaView() {
       return 0;
     });
   }, [favoriteChannels]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const firstChannel = document.querySelector('[data-nav-id^="fav-channel-"]') as HTMLElement;
+      if (firstChannel) firstChannel.focus();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     async function fetchReciters() {
@@ -105,10 +109,18 @@ export function MediaView() {
     setSelectedChannel(null);
     try {
       const results = await searchYouTubeVideos(finalQuery);
-      setVideoResults(results);
+      const sortedResults = results.sort((a, b) => {
+        const aTitle = a.title.toLowerCase();
+        const bTitle = b.title.toLowerCase();
+        const aIsLive = aTitle.includes('live') || aTitle.includes('مباشر');
+        const bIsLive = bTitle.includes('live') || bTitle.includes('مباشر');
+        if (aIsLive && !bIsLive) return -1;
+        if (!aIsLive && bIsLive) return 1;
+        return 0;
+      });
+      setVideoResults(sortedResults);
       setShowReciterGrid(false);
       setShowSurahGrid(false);
-      // Auto-focus logic for first search result
       setTimeout(() => {
         const firstResult = document.querySelector('.video-result-card') as HTMLElement;
         if (firstResult) firstResult.focus();
@@ -120,25 +132,74 @@ export function MediaView() {
     }
   }, [searchQuery]);
 
-  useEffect(() => {
-    const q = searchParams.get('q');
-    if (q) {
-      setSearchQuery(q);
-      handleVideoSearch(q);
+  const handleChannelSearch = async () => {
+    if (!channelSearchQuery.trim()) return;
+    setIsSearchingChannels(true);
+    try {
+      const results = await searchYouTubeChannels(channelSearchQuery);
+      setChannelResults(results);
+    } catch (error) {
+      console.error("Channel search failed", error);
+    } finally {
+      setIsSearchingChannels(false);
     }
-  }, [searchParams, handleVideoSearch]);
+  };
 
-  const handleSurahClick = (surahName: string) => {
-    if (!selectedReciter) return;
-    const query = `${selectedReciter.name} سورة ${surahName}`;
-    setSearchQuery(query);
-    handleVideoSearch(query);
-    setShowSurahGrid(false);
-    setShowReciterGrid(false);
+  const handleSelectChannel = async (channel: YouTubeChannel) => {
+    setSelectedChannel(channel);
+    setIsLoadingVideos(true);
+    try {
+      const videos = await fetchChannelVideos(channel.channelid);
+      const sorted = videos.sort((a, b) => {
+        const aLive = a.title.toLowerCase().includes('live') || a.title.includes('مباشر');
+        const bLive = b.title.toLowerCase().includes('live') || b.title.includes('مباشر');
+        return aLive === bLive ? 0 : aLive ? -1 : 1;
+      });
+      setChannelVideos(sorted);
+      setTimeout(() => {
+        const firstVid = document.querySelector('.channel-video-card') as HTMLElement;
+        if (firstVid) firstVid.focus();
+      }, 500);
+    } finally {
+      setIsLoadingVideos(false);
+    }
+  };
+
+  const handleAddVideoByUrl = async () => {
+    if (!urlInput.trim()) return;
+    setIsAddingByUrl(true);
+    try {
+      let videoId = "";
+      if (urlInput.includes("youtu.be/")) {
+        videoId = urlInput.split("youtu.be/")[1]?.split("?")[0];
+      } else if (urlInput.includes("youtube.com/watch?v=")) {
+        videoId = urlInput.split("v=")[1]?.split("&")[0];
+      } else if (urlInput.includes("youtube.com/embed/")) {
+        videoId = urlInput.split("embed/")[1]?.split("?")[0];
+      }
+
+      if (videoId) {
+        const video = await fetchVideoDetails(videoId);
+        if (video) {
+          setActiveVideo(video);
+          setIsUrlDialogOpen(false);
+          setUrlInput("");
+          toast({ title: "تم جلب الفيديو", description: video.title });
+        } else {
+          toast({ variant: "destructive", title: "خطأ", description: "لم نتمكن من العثور على تفاصيل الفيديو." });
+        }
+      } else {
+        toast({ variant: "destructive", title: "خطأ", description: "رابط يوتيوب غير صالح." });
+      }
+    } catch (error) {
+      toast({ variant: "destructive", title: "خطأ", description: "حدث خطأ أثناء جلب الفيديو." });
+    } finally {
+      setIsAddingByUrl(false);
+    }
   };
 
   const handleVoiceSearch = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
     const recognition = new SpeechRecognition();
     recognition.lang = 'ar-SA';
@@ -152,65 +213,19 @@ export function MediaView() {
     recognition.start();
   };
 
-  const handleAddVideoByUrl = async () => {
-    if (!urlInput.trim()) return;
-    const videoIdMatch = urlInput.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/|youtube\.com\/(?:shorts\/))([\w-]{11})/);
-    const videoId = videoIdMatch ? videoIdMatch[1] : urlInput.trim();
-    if (videoId.length !== 11) return;
-
-    setIsAddingByUrl(true);
-    try {
-      const video = await fetchVideoDetails(videoId);
-      if (video) toggleSaveVideo(video);
-      setIsUrlDialogOpen(false);
-      setUrlInput("");
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsAddingByUrl(false);
-    }
-  };
-
-  const handleChannelSearch = async () => {
-    if (!channelSearchQuery.trim()) return;
-    setIsSearchingChannels(true);
-    try {
-      const results = await searchYouTubeChannels(channelSearchQuery);
-      setChannelResults(results);
-    } finally {
-      setIsSearchingChannels(false);
-    }
-  };
-
-  const handleSelectChannel = async (channel: YouTubeChannel) => {
-    setSelectedChannel(channel);
-    setIsLoadingVideos(true);
-    try {
-      const videos = await fetchChannelVideos(channel.channelid);
-      setChannelVideos(videos);
-      // Auto-focus logic for first channel video
-      setTimeout(() => {
-        const firstVideo = document.querySelector('.channel-video-card') as HTMLElement;
-        if (firstVideo) firstVideo.focus();
-      }, 500);
-    } finally {
-      setIsLoadingVideos(false);
-    }
+  const handleSurahClick = (surah: string) => {
+    const query = `${surah} ${selectedReciter.name}`;
+    handleVideoSearch(query);
   };
 
   const getJuzColor = (idx: number) => {
-    const groups = ["blue", "emerald", "amber", "purple", "rose", "cyan"];
-    const groupIdx = Math.floor(idx / 19) % groups.length;
-    const colors: Record<string, string> = {
-      blue: "border-blue-500/40 bg-blue-500/10 text-blue-400",
-      emerald: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
-      amber: "border-amber-500/40 bg-amber-500/10 text-amber-400",
-      purple: "border-purple-500/40 bg-purple-500/10 text-purple-400",
-      rose: "border-rose-500/40 bg-rose-500/10 text-rose-400",
-      cyan: "border-cyan-500/40 bg-cyan-500/10 text-cyan-400"
-    };
-    return colors[groups[groupIdx]];
+    if (idx < 7) return "bg-emerald-500/10 border-emerald-500/20 text-emerald-500";
+    if (idx < 15) return "bg-blue-500/10 border-blue-500/20 text-blue-500";
+    if (idx < 25) return "bg-purple-500/10 border-purple-500/20 text-purple-500";
+    return "bg-amber-500/10 border-amber-500/20 text-amber-500";
   };
+
+  if (isFullScreen) return null;
 
   return (
     <div className="p-6 space-y-8 max-w-7xl mx-auto pb-32 min-h-screen relative dir-rtl safe-p-top">
@@ -228,7 +243,7 @@ export function MediaView() {
                   <span className="text-[10px] font-black uppercase tracking-widest">إضافة بالرابط</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-zinc-950 border-white/10 rounded-[2.5rem] p-8 max-w-md">
+              <DialogContent className="bg-zinc-950 border-white/10 rounded-[2.5rem] p-8 w-[90%] max-w-md mx-auto">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-black text-white mb-4 text-right">إضافة فيديو بالرابط</DialogTitle>
                 </DialogHeader>
@@ -386,6 +401,32 @@ export function MediaView() {
         )}
       </header>
 
+      {/* SEARCH RESULTS (ABOVE FAV CHANNELS) */}
+      {videoResults.length > 0 && (
+        <section className="space-y-8 animate-in fade-in duration-500 text-right">
+          <div className="flex items-center justify-between border-b border-white/10 pb-6">
+            <Button variant="ghost" onClick={() => setVideoResults([])} className="text-white/40 hover:text-white rounded-full h-12 px-6 focusable" tabIndex={0}>إغلاق النتائج</Button>
+            <h2 className="text-3xl font-black font-headline text-primary flex items-center gap-4">نتائج البحث <Search className="w-8 h-8" /></h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {videoResults.map((video, idx) => (
+              <Card key={video.id} data-nav-id={`search-result-${idx}`} onClick={() => setActiveVideo(video)} className="group video-result-card relative overflow-hidden bg-white/5 border-none rounded-[2rem] transition-all hover:scale-[1.05] cursor-pointer shadow-xl focusable" tabIndex={0}>
+                <div className="aspect-video relative overflow-hidden">
+                  <Image src={video.thumbnail} alt={video.title} fill className="object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  {(video.title.toLowerCase().includes('live') || video.title.includes('مباشر')) && (
+                    <div className="absolute top-4 right-4 bg-red-600 text-white px-3 py-1 rounded-full text-[10px] font-black animate-pulse shadow-lg">LIVE</div>
+                  )}
+                </div>
+                <div className="p-5 text-right">
+                  <h3 className="font-bold text-sm line-clamp-2 text-white font-headline h-10">{video.title}</h3>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="space-y-6">
         <h2 className="text-2xl font-black text-white flex items-center gap-3">
           <Zap className="w-6 h-6 text-yellow-500 fill-current" /> قنوات مباشرة مقترحة
@@ -463,27 +504,6 @@ export function MediaView() {
         </div>
       ) : (
         <section className="space-y-10 animate-in fade-in duration-500 text-right">
-          {videoResults.length > 0 && (
-            <div className="space-y-8 mb-12">
-              <div className="flex items-center justify-between border-b border-white/10 pb-6">
-                <Button variant="ghost" onClick={() => setVideoResults([])} className="text-white/40 hover:text-white rounded-full h-12 px-6 focusable" tabIndex={0}>إغلاق النتائج</Button>
-                <h2 className="text-3xl font-black font-headline text-primary flex items-center gap-4">نتائج البحث <Search className="w-8 h-8" /></h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {videoResults.map((video, idx) => (
-                  <Card key={video.id} data-nav-id={`search-result-${idx}`} onClick={() => setActiveVideo(video)} className="group video-result-card relative overflow-hidden bg-white/5 border-none rounded-[2rem] transition-all hover:scale-[1.05] cursor-pointer shadow-xl focusable" tabIndex={0}>
-                    <div className="aspect-video relative overflow-hidden">
-                      <Image src={video.thumbnail} alt={video.title} fill className="object-cover" />
-                    </div>
-                    <div className="p-5 text-right">
-                      <h3 className="font-bold text-sm line-clamp-2 text-white font-headline h-10">{video.title}</h3>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
           <div className="flex items-center justify-between">
             <h2 className="text-3xl font-black font-headline text-white flex items-center gap-4 tracking-tight">القنوات المفضلة <Radio className="text-primary w-8 h-8 animate-pulse" /></h2>
           </div>
@@ -498,9 +518,12 @@ export function MediaView() {
                   <span className="font-black text-xs uppercase tracking-[0.3em] text-white/40 group-hover:text-primary">إضافة قناة</span>
                 </div>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl bg-zinc-950 border-white/10 rounded-[3.5rem] p-0 overflow-hidden shadow-2xl">
-                <DialogHeader className="p-10 border-b border-white/10">
-                  <DialogTitle className="text-3xl font-black text-white mb-6 text-right">البحث عن القنوات</DialogTitle>
+              <DialogContent className="max-w-[90%] md:max-w-4xl bg-zinc-950 border-white/10 rounded-[3.5rem] p-0 overflow-hidden shadow-2xl w-[90%] mx-auto">
+                <DialogHeader className="p-10 border-b border-white/10 relative">
+                  <DialogTitle className="text-3xl font-black text-white text-right mb-6">البحث عن القنوات</DialogTitle>
+                  <button onClick={() => setIsDialogOpen(false)} className="absolute top-8 left-8 w-12 h-12 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-all border border-white/10 z-50">
+                    <X className="w-6 h-6 text-white" />
+                  </button>
                   <div className="flex gap-4">
                     <Input placeholder="اسم القناة..." value={channelSearchQuery} onChange={(e) => setChannelSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleChannelSearch()} className="bg-white/5 border-white/10 h-16 rounded-[1.5rem] text-xl px-8 text-right focusable flex-1" tabIndex={0} data-nav-id="channel-search-input" />
                     <Button onClick={handleChannelSearch} disabled={isSearchingChannels} className="h-16 w-20 bg-primary rounded-[1.5rem] shadow-xl focusable" tabIndex={0}>
@@ -520,7 +543,7 @@ export function MediaView() {
                           <div className="flex-1 min-w-0 text-right">
                             <h4 className="font-black text-xl text-white truncate">{channel.name}</h4>
                           </div>
-                          <div className={cn("rounded-full h-14 px-8 font-black text-base shadow-lg", isSubscribed ? "bg-accent/20 text-accent" : "bg-primary text-white")}>
+                          <div className={cn("rounded-full h-14 px-8 font-black text-base shadow-lg flex items-center justify-center", isSubscribed ? "bg-accent/20 text-accent" : "bg-primary text-white")}>
                             {isSubscribed ? "مشترك" : "إضافة"}
                           </div>
                         </div>
@@ -537,18 +560,16 @@ export function MediaView() {
                   <Image src={channel.image} alt={channel.name} fill className="object-cover group-hover:scale-115 transition-transform duration-700" />
                   <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-all" />
                   
-                  {/* Star Toggle Button */}
                   <button 
                     onClick={(e) => { e.stopPropagation(); toggleStarChannel(channel.channelid); }}
                     className={cn(
                       "absolute top-2 right-2 w-10 h-10 rounded-full backdrop-blur-xl border border-white/10 flex items-center justify-center transition-all z-30",
-                      channel.starred ? "bg-yellow-500 text-black opacity-100" : "bg-black/60 text-white/40 hover:text-white opacity-0 group-hover:opacity-100 group-focus:opacity-100"
+                      channel.starred ? "bg-yellow-500 text-black opacity-100 shadow-glow" : "bg-black/60 text-white/40 hover:text-white opacity-0 group-hover:opacity-100 group-focus:opacity-100"
                     )}
                   >
                     <Star className={cn("w-5 h-5", channel.starred && "fill-current")} />
                   </button>
 
-                  {/* Remove Button */}
                   <button 
                     onClick={(e) => { e.stopPropagation(); removeChannel(channel.channelid); }}
                     className="absolute top-2 left-2 w-10 h-10 rounded-full bg-red-600/80 backdrop-blur-xl border border-white/10 text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 group-focus:opacity-100 z-30 hover:bg-red-600"

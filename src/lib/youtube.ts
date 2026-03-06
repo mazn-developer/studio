@@ -97,14 +97,17 @@ export async function searchYouTubeChannels(query: string): Promise<YouTubeChann
 
   const channelIds = searchData.items.map((item: any) => item.snippet.channelId).join(',');
   const statsData = await fetchWithRotation('channels', {
-    part: 'statistics',
+    part: 'snippet,statistics',
     id: channelIds
   });
 
-  const statsMap: Record<string, string> = {};
+  const statsMap: Record<string, { subs: string, image: string }> = {};
   if (statsData && statsData.items) {
     statsData.items.forEach((item: any) => {
-      statsMap[item.id] = formatSubscriberCount(item.statistics.subscriberCount);
+      statsMap[item.id] = {
+        subs: formatSubscriberCount(item.statistics.subscriberCount),
+        image: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url
+      };
     });
   }
 
@@ -112,11 +115,26 @@ export async function searchYouTubeChannels(query: string): Promise<YouTubeChann
     channelid: item.snippet.channelId,
     name: item.snippet.title,
     channeltitle: item.snippet.title,
-    image: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
+    image: statsMap[item.snippet.channelId]?.image || item.snippet.thumbnails.high?.url,
     clickschannel: 0,
     starred: false,
-    subscriberCount: statsMap[item.snippet.channelId] || "---"
+    subscriberCount: statsMap[item.snippet.channelId]?.subs || "---"
   }));
+}
+
+export async function fetchChannelDetails(channelId: string) {
+  const data = await fetchWithRotation('channels', {
+    part: 'snippet,statistics',
+    id: channelId
+  });
+  if (!data || !data.items || data.items.length === 0) return null;
+  const item = data.items[0];
+  return {
+    channelid: item.id,
+    name: item.snippet.title,
+    image: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
+    subscriberCount: formatSubscriberCount(item.statistics.subscriberCount)
+  };
 }
 
 export async function searchYouTubeVideos(query: string): Promise<YouTubeVideo[]> {

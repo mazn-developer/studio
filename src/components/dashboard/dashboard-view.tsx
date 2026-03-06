@@ -33,6 +33,9 @@ export function DashboardView() {
 
   return (
     <div className="h-full w-full p-6 flex flex-col gap-6 relative overflow-y-auto pb-32 no-scrollbar">
+      {/* Safe Area for Floating Island - Prevent overlap */}
+      <div className="h-24 shrink-0 w-full" />
+
       {/* Brand Header */}
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[50] opacity-80 pointer-events-none">
         <Image 
@@ -104,7 +107,7 @@ export function DashboardView() {
         </div>
       </div>
 
-      <div className="w-full glass-panel rounded-[2.5rem] p-4 shadow-xl focusable" tabIndex={0}>
+      <div className="w-full glass-panel rounded-[2.5rem] p-4 shadow-xl focusable" tabIndex={0} data-nav-id="prayer-timeline-section">
         <PrayerTimelineWidget />
       </div>
 

@@ -54,8 +54,6 @@ export function SettingsView() {
     removeReminder, 
     favoriteTeams, 
     toggleFavoriteTeam,
-    favoriteLeagueIds,
-    toggleFavoriteLeagueId,
     mapSettings, 
     updateMapSettings 
   } = useMediaStore();
@@ -68,14 +66,6 @@ export function SettingsView() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const isFavTeam = (id: number) => favoriteTeams.some(t => t.id === id);
-
-  // Smart Focus: focus first tab trigger on mount
-  useEffect(() => {
-    setTimeout(() => {
-      const firstTab = document.querySelector('[data-nav-id="tab-appearance"]') as HTMLElement;
-      if (firstTab) firstTab.focus();
-    }, 500);
-  }, []);
 
   const handleGlobalSearch = useCallback(async () => {
     setIsSearching(true);
@@ -92,7 +82,6 @@ export function SettingsView() {
     }
   }, [clubSearch, leagueFilter, toast]);
 
-  // Trigger search when league changes to show all clubs in that league
   useEffect(() => {
     if (leagueFilter !== 'all') {
       handleGlobalSearch();
@@ -116,8 +105,8 @@ export function SettingsView() {
   };
 
   return (
-    <div className="p-12 space-y-12 max-w-7xl mx-auto pb-40 animate-in fade-in duration-700">
-      <header className="flex flex-col gap-4 text-right">
+    <div className="p-12 space-y-12 max-w-7xl mx-auto pb-40 animate-in fade-in duration-700 text-right">
+      <header className="flex flex-col gap-4">
         <h1 className="text-6xl font-black font-headline text-white tracking-tighter flex items-center justify-end gap-6">
           مركز التحكم <Settings className="w-12 h-12 text-primary animate-spin-slow" />
         </h1>
@@ -126,19 +115,19 @@ export function SettingsView() {
 
       <Tabs defaultValue="appearance" className="w-full">
         <TabsList className="bg-white/5 p-1 rounded-full border border-white/10 h-16 mb-12 flex justify-start w-fit overflow-x-auto no-scrollbar">
-          <TabsTrigger value="appearance" data-nav-id="tab-appearance" className="rounded-full px-10 h-full data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-lg whitespace-nowrap focusable">
+          <TabsTrigger value="appearance" className="rounded-full px-10 h-full data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-lg focusable">
             <Palette className="w-5 h-5 mr-3" /> المظهر والزوم
           </TabsTrigger>
-          <TabsTrigger value="youtube" data-nav-id="tab-youtube" className="rounded-full px-10 h-full data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-lg whitespace-nowrap focusable">
+          <TabsTrigger value="youtube" className="rounded-full px-10 h-full data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-lg focusable">
             <Youtube className="w-5 h-5 mr-3" /> YouTube
           </TabsTrigger>
-          <TabsTrigger value="reminders" data-nav-id="tab-reminders" className="rounded-full px-10 h-full data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-lg whitespace-nowrap focusable">
+          <TabsTrigger value="reminders" className="rounded-full px-10 h-full data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-lg focusable">
             <Bell className="w-5 h-5 mr-3" /> التذكيرات
           </TabsTrigger>
-          <TabsTrigger value="football" data-nav-id="tab-football" className="rounded-full px-10 h-full data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-lg whitespace-nowrap focusable">
+          <TabsTrigger value="football" className="rounded-full px-10 h-full data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-lg focusable">
             <Trophy className="w-5 h-5 mr-3" /> الرياضة
           </TabsTrigger>
-          <TabsTrigger value="system" data-nav-id="tab-system" className="rounded-full px-10 h-full data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-lg whitespace-nowrap focusable">
+          <TabsTrigger value="system" className="rounded-full px-10 h-full data-[state=active]:bg-primary data-[state=active]:text-white font-bold text-lg focusable">
             <Info className="w-5 h-5 mr-3" /> النظام
           </TabsTrigger>
         </TabsList>
@@ -146,60 +135,31 @@ export function SettingsView() {
         <TabsContent value="appearance" className="space-y-8 outline-none">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <Card className="bg-zinc-900/50 border-white/10 rounded-[3rem] p-10 space-y-8">
-              <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-2xl font-black text-white flex items-center gap-4">
-                  <Maximize className="w-8 h-8 text-primary" /> زوم المتصفح والمنظور
-                </CardTitle>
-                <CardDescription className="text-white/40 font-bold uppercase tracking-widest text-xs mt-2">تفاعل مباشر مع الخريطة الحقيقية</CardDescription>
-              </CardHeader>
-              
+              <CardTitle className="text-2xl font-black text-white flex items-center gap-4">
+                <Maximize className="w-8 h-8 text-primary" /> زوم المتصفح والمنظور
+              </CardTitle>
               <div className="space-y-8">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-black text-white/40 uppercase tracking-[0.2em]">مستوى زوم المتصفح</label>
+                    <label className="text-xs font-black text-white/40 uppercase tracking-[0.2em]">مستوى زوم الخريطة</label>
                     <span className="text-primary font-black text-lg bg-primary/10 px-4 py-1 rounded-lg border border-primary/20">{mapSettings.zoom.toFixed(1)}</span>
                   </div>
-                  <Slider 
-                    value={[mapSettings.zoom]} 
-                    min={15} max={21} step={0.1} 
-                    onValueChange={([val]) => updateMapSettings({ zoom: val })} 
-                    className="cursor-pointer focusable"
-                  />
+                  <Slider value={[mapSettings.zoom]} min={15} max={21} step={0.1} onValueChange={([val]) => updateMapSettings({ zoom: val })} className="cursor-pointer focusable" />
                 </div>
-
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <label className="text-xs font-black text-white/40 uppercase tracking-[0.2em]">إمالة الكاميرا</label>
                     <span className="text-primary font-black text-lg bg-primary/10 px-4 py-1 rounded-lg border border-primary/20">{mapSettings.tilt}°</span>
                   </div>
-                  <Slider 
-                    value={[mapSettings.tilt]} 
-                    min={0} max={85} step={5} 
-                    onValueChange={([val]) => updateMapSettings({ tilt: val })} 
-                    className="cursor-pointer focusable"
-                  />
+                  <Slider value={[mapSettings.tilt]} min={0} max={85} step={5} onValueChange={([val]) => updateMapSettings({ tilt: val })} className="cursor-pointer focusable" />
                 </div>
               </div>
-
-              <Button onClick={() => toast({ title: "تم الحفظ", description: "تم تحديث إعدادات العرض." })} className="w-full h-16 rounded-2xl bg-primary text-white text-lg font-black shadow-2xl mt-4 hover:scale-[1.02] transition-all focusable">
-                <Save className="w-6 h-6 mr-3" /> تثبيت وحفظ
-              </Button>
             </Card>
-
-            <Card className="bg-zinc-900/50 border-white/10 rounded-[3rem] p-10 space-y-8">
-              <CardTitle className="text-2xl font-black text-white flex items-center gap-4">
-                <ImageIcon className="w-6 h-6 text-accent" /> خلفية النظام
-              </CardTitle>
+            <Card className="bg-zinc-900/50 border-white/10 rounded-[3rem] p-10">
+              <CardTitle className="text-2xl font-black text-white mb-6">خلفية النظام</CardTitle>
               <div className="grid grid-cols-2 gap-4 h-64">
                 {BACKGROUNDS.map((bg, idx) => (
-                  <button 
-                    key={idx}
-                    onClick={() => updateMapSettings({ backgroundIndex: idx })}
-                    className={cn(
-                      "relative rounded-2xl overflow-hidden border-4 transition-all group focusable",
-                      mapSettings.backgroundIndex === idx ? "border-primary scale-105 shadow-glow" : "border-transparent opacity-40 hover:opacity-100"
-                    )}
-                  >
+                  <button key={idx} onClick={() => updateMapSettings({ backgroundIndex: idx })} className={cn("relative rounded-2xl overflow-hidden border-4 transition-all group focusable", mapSettings.backgroundIndex === idx ? "border-primary scale-105 shadow-glow" : "border-transparent opacity-40 hover:opacity-100")}>
                     <img src={`${bg}?auto=format&fit=crop&q=40&w=300`} className="w-full h-full object-cover" alt="" />
                   </button>
                 ))}
@@ -212,16 +172,14 @@ export function SettingsView() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 dir-rtl">
             <div className="lg:col-span-4 space-y-6">
               <Card className="bg-zinc-900/50 border-white/10 rounded-[2.5rem] p-8 text-right">
-                <CardHeader className="p-0 mb-6">
-                  <CardTitle className="text-xl font-black text-white flex items-center justify-end gap-3">
-                    <Globe className="w-6 h-6 text-primary" /> Global Club Scout
-                  </CardTitle>
-                </CardHeader>
+                <CardTitle className="text-xl font-black text-white flex items-center justify-end gap-3 mb-6">
+                  <Globe className="w-6 h-6 text-primary" /> Global Club Scout
+                </CardTitle>
                 <div className="space-y-6">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Select League</label>
                     <Select value={leagueFilter} onValueChange={setLeagueFilter}>
-                      <SelectTrigger data-nav-id="league-select" className="bg-white/5 border-white/10 h-14 rounded-2xl focusable text-right">
+                      <SelectTrigger className="bg-white/5 border-white/10 h-14 rounded-2xl focusable text-right">
                         <SelectValue placeholder="All Major Leagues" />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-900 border-white/10 text-white rounded-2xl">
@@ -233,76 +191,33 @@ export function SettingsView() {
                     </Select>
                   </div>
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Team Name (English)</label>
-                    <div className="relative">
-                      <Input 
-                        placeholder="Search teams in English (e.g. Real Madrid)..." 
-                        className="bg-white/5 border-white/10 h-14 px-6 rounded-2xl focusable text-right"
-                        value={clubSearch}
-                        onChange={(e) => setClubSearch(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleGlobalSearch()}
-                      />
-                    </div>
+                    <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Team Name</label>
+                    <Input placeholder="Search teams..." className="bg-white/5 border-white/10 h-14 px-6 rounded-2xl focusable text-right" value={clubSearch} onChange={(e) => setClubSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleGlobalSearch()} />
                   </div>
-                  <Button 
-                    onClick={handleGlobalSearch} 
-                    disabled={isSearching} 
-                    className="w-full h-14 rounded-2xl bg-primary text-white font-black shadow-lg focusable"
-                  >
-                    {isSearching ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6 ml-2" />}
-                    Scout Database
+                  <Button onClick={handleGlobalSearch} disabled={isSearching} className="w-full h-14 rounded-2xl bg-primary text-white font-black focusable">
+                    {isSearching ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6 ml-2" />} Scout Database
                   </Button>
-                </div>
-              </Card>
-
-              <Card className="bg-zinc-900/50 border-white/10 rounded-[2.5rem] p-8 text-right">
-                <CardHeader className="p-0 mb-4">
-                  <CardTitle className="text-xl font-black text-white flex items-center justify-end gap-3">
-                    <Star className="w-5 h-5 text-accent fill-current" /> الدوريات المفضلة
-                  </CardTitle>
-                </CardHeader>
-                <div className="grid grid-cols-1 gap-2">
-                  {MAJOR_LEAGUES.map(league => {
-                    const isFav = favoriteLeagueIds.includes(league.id);
-                    return (
-                      <Button
-                        key={league.id}
-                        onClick={() => toggleFavoriteLeagueId(league.id)}
-                        variant="ghost"
-                        className={cn(
-                          "justify-between h-12 rounded-xl px-4 flex-row-reverse focusable",
-                          isFav ? "bg-primary/20 text-primary" : "text-white/40"
-                        )}
-                      >
-                        <span className="font-bold text-xs">{league.name}</span>
-                        {isFav && <Check className="w-4 h-4" />}
-                      </Button>
-                    );
-                  })}
                 </div>
               </Card>
             </div>
 
             <div className="lg:col-span-8 flex flex-col gap-8 text-right">
+              {/* RESULTS ABOVE FAVORITES */}
               {searchResults.length > 0 && (
                 <Card className="bg-zinc-900/50 border-white/10 rounded-[2.5rem] p-8 animate-in fade-in slide-in-from-top-6 duration-700">
                   <CardHeader className="p-0 mb-6 flex flex-row items-center justify-between">
                     <CardTitle className="text-xl font-black text-white">Scouting Results</CardTitle>
-                    <Button variant="ghost" onClick={() => setSearchResults([])} className="text-white/20 hover:text-white rounded-full focusable">إغلاق النتائج</Button>
+                    <Button variant="ghost" onClick={() => setSearchResults([])} className="text-white/20 hover:text-white rounded-full">إغلاق النتائج</Button>
                   </CardHeader>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {searchResults.map((item) => {
                       const team = { id: item.team.id, name: item.team.name, logo: item.team.logo };
                       const isFav = isFavTeam(team.id);
                       return (
-                        <div key={team.id} className={cn("p-4 rounded-[1.5rem] border flex flex-col items-center gap-3 transition-all focusable", isFav ? "bg-primary/15 border-primary shadow-glow" : "bg-white/5 border-white/10 hover:bg-white/10")}>
-                           <img src={team.logo} className="w-14 h-14 object-contain drop-shadow-lg" alt="" />
+                        <div key={team.id} className={cn("p-4 rounded-[1.5rem] border flex flex-col items-center gap-3 transition-all", isFav ? "bg-primary/15 border-primary shadow-glow" : "bg-white/5 border-white/10")}>
+                           <img src={team.logo} className="w-14 h-14 object-contain" alt="" />
                            <span className="text-[10px] font-black text-center truncate w-full uppercase">{team.name}</span>
-                           <Button 
-                            onClick={() => toggleFavoriteTeam(team)} 
-                            size="icon" 
-                            className={cn("w-10 h-10 rounded-full transition-all", isFav ? "bg-yellow-500 text-black shadow-glow" : "bg-black/60 text-white/20 hover:text-white")}
-                           >
+                           <Button onClick={() => toggleFavoriteTeam(team)} size="icon" className={cn("w-10 h-10 rounded-full", isFav ? "bg-yellow-500 text-black shadow-glow" : "bg-black/60 text-white/40 hover:text-white")}>
                              <Star className={cn("w-5 h-5", isFav && "fill-current")} />
                            </Button>
                         </div>
@@ -323,9 +238,9 @@ export function SettingsView() {
                     <div className="col-span-full py-12 text-center text-white/20 italic font-bold uppercase tracking-widest">لا توجد أندية مفضلة حالياً</div>
                   ) : favoriteTeams.map((team) => (
                     <div key={team.id} className="p-4 rounded-[1.5rem] bg-primary/10 border border-primary/30 flex flex-col items-center gap-3 group animate-in zoom-in-95">
-                       <img src={team.logo} className="w-14 h-14 object-contain drop-shadow-xl" alt="" />
-                       <span className="text-[10px] font-black text-center truncate w-full uppercase text-primary">{team.name}</span>
-                       <Button onClick={() => toggleFavoriteTeam(team)} size="icon" className="w-10 h-10 rounded-full bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white transition-all focusable">
+                       <img src={team.logo} className="w-14 h-14 object-contain" alt="" />
+                       <span className="text-[10px] font-black text-center truncate w-full text-primary uppercase">{team.name}</span>
+                       <Button onClick={() => toggleFavoriteTeam(team)} size="icon" className="w-10 h-10 rounded-full bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white transition-all">
                           <Trash2 className="w-5 h-5" />
                        </Button>
                     </div>
@@ -351,27 +266,20 @@ export function SettingsView() {
         </TabsContent>
 
         <TabsContent value="reminders" className="space-y-8 outline-none">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="bg-zinc-900/50 border-white/10 rounded-[3rem] p-10 text-right">
-              <h3 className="text-xl font-black text-white mb-6">تذكير جديد</h3>
-              <div className="space-y-4">
-                <Input 
-                  placeholder="مثلاً: أذكار الصباح" 
-                  className="bg-white/5 border-white/10 h-14 rounded-2xl px-6 focusable text-right"
-                  value={newReminder.label}
-                  onChange={(e) => setNewReminder({ ...newReminder, label: e.target.value })}
-                />
-                <Button onClick={handleAddReminder} className="w-full h-14 bg-primary rounded-2xl font-black focusable">حفظ</Button>
-              </div>
-            </Card>
-          </div>
+          <Card className="bg-zinc-900/50 border-white/10 rounded-[3rem] p-10 text-right">
+            <h3 className="text-xl font-black text-white mb-6">إضافة تذكير جديد</h3>
+            <div className="space-y-4 max-w-md ml-auto">
+              <Input placeholder="مثلاً: أذكار الصباح" className="bg-white/5 border-white/10 h-14 rounded-2xl px-6 focusable text-right" value={newReminder.label} onChange={(e) => setNewReminder({ ...newReminder, label: e.target.value })} />
+              <Button onClick={handleAddReminder} className="w-full h-14 bg-primary rounded-2xl font-black focusable">حفظ التذكير</Button>
+            </div>
+          </Card>
         </TabsContent>
 
         <TabsContent value="system" className="space-y-8 outline-none">
           <Card className="bg-zinc-900/50 border-white/10 rounded-[3rem] p-10 flex flex-col items-center gap-6">
              <ShieldCheck className="w-12 h-12 text-accent" />
-             <h3 className="text-xl font-black text-white">النظام مفعل</h3>
-             <span className="text-xs text-white/40">v2.6.0 build 2026-JSONBIN-SYNC</span>
+             <h3 className="text-xl font-black text-white">النظام مفعل وبحالة ممتازة</h3>
+             <span className="text-xs text-white/40">v2.8.0 JSONBIN-SYNC-PRO</span>
           </Card>
         </TabsContent>
       </Tabs>

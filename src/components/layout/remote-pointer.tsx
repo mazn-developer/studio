@@ -18,15 +18,26 @@ export function RemotePointer() {
     const current = document.activeElement as HTMLElement;
     const isCurrentFocusable = current && current.classList.contains("focusable");
     
-    // Smart Auto-Focus if nothing focused or if focus is lost
-    if (!isCurrentFocusable) {
-      // Find first visible content item (preferring items NOT in the dock first)
-      const contentItem = focusables.find(el => !el.dataset.navId?.startsWith('dock-')) || focusables[0];
-      contentItem?.focus();
+    if (!isCurrentFocusable || !direction) {
+      let target: HTMLElement | null = null;
+      if (pathname === '/') {
+        target = document.querySelector('.prayer-timeline-item') as HTMLElement || focusables[0];
+      } else if (pathname === '/media') {
+        target = document.querySelector('[data-nav-id^="fav-channel-"]') as HTMLElement || focusables[0];
+      } else if (pathname === '/iptv') {
+        target = document.querySelector('.iptv-channel-item') as HTMLElement || focusables[0];
+      } else if (pathname === '/football') {
+        target = document.querySelector('.match-card-item') as HTMLElement || focusables[0];
+      } else {
+        target = focusables.find(el => !el.dataset.navId?.startsWith('dock-')) || focusables[0];
+      }
+      
+      if (target) {
+        target.focus();
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
-
-    if (!direction) return;
 
     const currentRect = current.getBoundingClientRect();
     let minDistance = Infinity;
@@ -38,13 +49,11 @@ export function RemotePointer() {
       const dx = p2.x - p1.x;
       const dy = p2.y - p1.y;
 
-      // Filter by direction with small threshold
       if (dir === "ArrowRight" && dx <= 5) return Infinity;
       if (dir === "ArrowLeft" && dx >= -5) return Infinity;
       if (dir === "ArrowDown" && dy <= 5) return Infinity;
       if (dir === "ArrowUp" && dy >= -5) return Infinity;
 
-      // Prioritize primary axis alignment
       const primaryAxisWeight = 0.5;
       const secondaryAxisWeight = 1.5;
       
@@ -69,13 +78,12 @@ export function RemotePointer() {
       next.focus();
       next.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }, []);
+  }, [pathname]);
 
-  // Handle auto-focus on route change
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate(''); // Trigger auto-focus logic
-    }, 800);
+      navigate(''); 
+    }, 1000);
     return () => clearTimeout(timer);
   }, [pathname, navigate]);
 

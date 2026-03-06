@@ -10,21 +10,6 @@ import { Input } from "@/components/ui/input";
 import { getIptvCategories, getIptvChannels } from "@/app/actions/iptv";
 import { cn } from "@/lib/utils";
 
-// Special Web Stream Channels with official logos and professional sources
-const DIRECT_CHANNELS: IptvChannel[] = [
-  { stream_id: "direct-1", name: "ثمانية 1", stream_icon: "https://gallery-images.me/pics/arabicfta/thmanya.png", category_id: "direct", url: "https://direct.aflam4you.net/playeraf.php?vid=9311&aflam_s=1&aflam_k=ff09665543234455", type: 'web' },
-  { stream_id: "direct-2", name: "beIN 1", stream_icon: "https://gallery-images.me/pics/bein/bein-sports-1.png", category_id: "direct", url: "https://direct.aflam4you.net/zremb472.php?vid=68&aflam_s=1&aflam_w=360&aflam_h=250&aflam_k=1831551111111", type: 'web' },
-  { stream_id: "direct-3", name: "beIN 2", stream_icon: "https://gallery-images.me/pics/bein/bein-sports-2.png", category_id: "direct", url: "https://direct.aflam4you.net//zremb472.php?vid=2&aflam_s=1&aflam_w=360&aflam_h=250&aflam_k=183871551111", type: 'web' },
-  { stream_id: "direct-4", name: "beIN 3", stream_icon: "https://gallery-images.me/pics/bein/bein-sports-3.png", category_id: "direct", url: "https://direct.aflam4you.net/playeraf.php?vid=1&aflam_s=1&aflam_k=ff09665543234455", type: 'web' },
-  { stream_id: "direct-5", name: "عمان مباشر", stream_icon: "https://gallery-images.me/pics/arabicfta/oman.png", category_id: "direct", url: "https://player.mangomolo.com/v1/live?id=MTY4&channelid=MTYx&countries=Q0M=&w=100%25&h=100%25&filter=DENY&signature=3fd1e8dd84138a41bf33d93afd4a7f09&language=en&app_id=&fullscreen=yes&player_profile=&base_url=aHR0cHM6Ly9heW4ub20vbGl2ZS8xNjEvJUQ5JTgyJUQ5JTg2JUQ4JUE3JUQ4JUE5LSVEOCVCOSVEOSU4NSVEOCVBNyVEOSU4Ni0lRDklODUlRDglQTglRDglQTclRDglQjQlRDglQjE=&autoplay=true&vast=true", type: 'web' },
-  { stream_id: "direct-6", name: "MBC 1", stream_icon: "https://gallery-images.me/pics/mbc/mbc_ae_1.png", category_id: "direct", url: "https://play.arab-stream.live/p/mbc-1-ksa.html", type: 'web' },
-  { stream_id: "UCos52azQNBgW63_9uDJoPDA", name: "القران الكريم", stream_icon: "https://yt3.googleusercontent.com/ytc/AIdro_mesiGG76gww2WnpFVUFbMz-s2d4IjJJVhDqJuCVscqKLY=s160-c-k-c0x00ffffff-no-rj", category_id: "direct", url: "https://www.youtube.com/embed/live_stream?channel=UCos52azQNBgW63_9uDJoPDA", type: 'web' }, 
-  { stream_id: "UCfiwzLy-8yKzIbsmZTzxDgw", name: "الجزيرة الإخبارية", stream_icon: "https://yt3.googleusercontent.com/oN_i26ADOuQ4PdypHo8yjVXh6QSXZ1kMeYzaRH3hNOlQE1uEUUQ-gkCh0o1rUQ2PM7Qx6QvY2g=s160-c-k-c0x00ffffff-no-rj", category_id: "direct", url: "https://www.youtube.com/embed/live_stream?channel=UCfiwzLy-8yKzIbsmZTzxDgw", type: 'web' },
-  { stream_id: "direct-8", name: "ثمانية 2", stream_icon: "https://gallery-images.me/pics/arabicfta/thmanya.png", category_id: "direct", url: "https://direct.aflam4you.net/playeraf.php?vid=4834&aflam_s=1&aflam_k=ff09665543234455", type: 'web' },
-  { stream_id: "direct-9", name: "ثمانية 3", stream_icon: "https://gallery-images.me/pics/arabicfta/thmanya.png", category_id: "direct", url: "https://direct.aflam4you.net/playeraf.php?vid=94&aflam_s=1&aflam_k=ff09665543234455", type: 'web' },
-  { stream_id: "direct-10", name: "MBC ACTION", stream_icon: "https://gallery-images.me/pics/mbc/mbc_ae_action.png", category_id: "direct", url: "https://direct.aflam4you.net/zremb472.php?vid=500&aflam_s=1&aflam_w=360&aflam_h=250&aflam_k=1831551111111", type: 'web' },
-];
-
 export function IptvView() {
   const { setActiveIptv, favoriteIptvChannels, toggleFavoriteIptvChannel, setIptvPlaylist } = useMediaStore();
   const [categories, setCategories] = useState<any[]>([]);
@@ -35,14 +20,21 @@ export function IptvView() {
 
   useEffect(() => { 
     fetchCategories(); 
-    fetchChannels('direct');
+    setSelectedCat('direct');
+    setChannels(favoriteIptvChannels);
   }, []);
+
+  useEffect(() => {
+    if (selectedCat === 'direct') {
+      setChannels(favoriteIptvChannels);
+    }
+  }, [favoriteIptvChannels, selectedCat]);
 
   const fetchCategories = async () => {
     setLoading(true);
     try {
       const data = await getIptvCategories();
-      const directCat = { category_id: "direct", category_name: "قنوات متميزة (Direct)" };
+      const directCat = { category_id: "direct", category_name: "القنوات المفضلة (Direct)" };
       setCategories([directCat, ...(Array.isArray(data) ? data : [])]);
     } catch {
       console.error("Failed to fetch IPTV categories");
@@ -53,9 +45,8 @@ export function IptvView() {
 
   const fetchChannels = async (catId: string) => {
     if (catId === 'direct') { 
-      setChannels(DIRECT_CHANNELS); 
+      setChannels(favoriteIptvChannels); 
       setSelectedCat(catId); 
-      // Auto-focus logic for first channel
       setTimeout(() => {
         const firstChannel = document.querySelector('.iptv-channel-item') as HTMLElement;
         if (firstChannel) firstChannel.focus();
@@ -109,15 +100,8 @@ export function IptvView() {
           <p className="text-white/40 text-xs font-bold uppercase tracking-widest mr-1">Premium Live Feed Hub</p>
         </div>
         <div className="flex items-center gap-4">
-          <Button 
-            onClick={() => fetchChannels('direct')} 
-            variant="outline" 
-            className={cn(
-              "rounded-full transition-all focusable h-12 px-6",
-              selectedCat === 'direct' ? "bg-emerald-500 text-black border-emerald-400 shadow-glow" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
-            )}
-          >
-            <Zap className="w-4 h-4 ml-2 fill-current" /> القنوات المتميزة
+          <Button onClick={() => fetchChannels('direct')} variant="outline" className={cn("rounded-full transition-all focusable h-12 px-6", selectedCat === 'direct' ? "bg-emerald-500 text-black border-emerald-400 shadow-glow" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500")}>
+            <Zap className="w-4 h-4 ml-2 fill-current" /> القنوات المفضلة
           </Button>
           {selectedCat && (
             <Button variant="ghost" onClick={() => { setSelectedCat(null); setChannels([]); setSearch(""); }} className="rounded-full bg-white/5 border border-white/10 text-white focusable h-12 px-6">
@@ -135,13 +119,7 @@ export function IptvView() {
               <span className="text-white/40 font-black uppercase tracking-widest">جاري جلب القوائم...</span>
             </div>
           ) : categories.map((cat, idx) => (
-            <Card 
-              key={cat.category_id} 
-              onClick={() => fetchChannels(cat.category_id)} 
-              data-nav-id={`iptv-cat-${idx}`}
-              className="group iptv-cat-item bg-white/5 border-white/5 hover:border-emerald-500 transition-all cursor-pointer focusable overflow-hidden rounded-[2.5rem] shadow-xl"
-              tabIndex={0}
-            >
+            <Card key={cat.category_id} onClick={() => fetchChannels(cat.category_id)} data-nav-id={`iptv-cat-${idx}`} className="group iptv-cat-item bg-white/5 border-white/5 hover:border-emerald-500 transition-all cursor-pointer focusable overflow-hidden rounded-[2.5rem] shadow-xl" tabIndex={0}>
               <CardContent className="p-8 flex items-center justify-between">
                 <div className="flex items-center gap-5">
                   <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center border transition-all duration-500", cat.category_id === 'direct' ? "bg-emerald-500/20 border-emerald-500/20 group-hover:scale-110 shadow-lg" : "bg-white/10 border-white/10")}>
@@ -156,62 +134,21 @@ export function IptvView() {
         </div>
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="relative group">
-            <Search className="absolute right-6 top-1/2 -translate-y-1/2 h-7 w-7 text-white/20 group-focus-within:text-emerald-500 transition-colors" />
-            <Input 
-              placeholder="ابحث عن قناة في هذه القائمة..." 
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)} 
-              className="bg-white/5 border-white/10 h-20 rounded-[2rem] pr-16 text-2xl focusable text-right shadow-2xl" 
-              data-nav-id="iptv-search-input"
-            />
-          </div>
-          
+          <Input placeholder="ابحث عن قناة في هذه القائمة..." value={search} onChange={(e) => setSearch(e.target.value)} className="bg-white/5 border-white/10 h-20 rounded-[2rem] pr-16 text-2xl focusable text-right shadow-2xl" data-nav-id="iptv-search-input" />
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8">
             {loading ? (
               <div className="col-span-full py-40 flex justify-center"><Loader2 className="w-16 h-16 animate-spin text-emerald-500" /></div>
             ) : sortedAndFilteredChannels.map((ch, idx) => (
               <div key={ch.stream_id} className="flex flex-col items-center gap-4 group relative">
-                <div 
-                  onClick={() => handleChannelSelect(ch, idx)} 
-                  data-nav-id={`iptv-channel-${idx}`}
-                  className={cn(
-                    "iptv-channel-item w-36 h-36 sm:w-44 sm:h-44 rounded-[2.8rem] bg-white/5 border-4 transition-all cursor-pointer focusable overflow-hidden relative shadow-2xl",
-                    isStarred(ch.stream_id) ? "border-yellow-500/50" : "border-white/5 hover:border-emerald-500"
-                  )}
-                  tabIndex={0}
-                >
-                  {ch.stream_icon ? (
-                    <img src={ch.stream_icon} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-                      <Tv className="w-14 h-14 text-white/10" />
-                    </div>
-                  )}
+                <div onClick={() => handleChannelSelect(ch, idx)} data-nav-id={`iptv-channel-${idx}`} className={cn("iptv-channel-item w-36 h-36 sm:w-44 sm:h-44 rounded-[2.8rem] bg-white/5 border-4 transition-all cursor-pointer focusable overflow-hidden relative shadow-2xl", isStarred(ch.stream_id) ? "border-yellow-500/50" : "border-white/5 hover:border-emerald-500")} tabIndex={0}>
+                  {ch.stream_icon ? <img src={ch.stream_icon} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /> : <div className="w-full h-full flex items-center justify-center bg-zinc-900"><Tv className="w-14 h-14 text-white/10" /></div>}
                   <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition-all" />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                    <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center shadow-2xl scale-75 group-hover:scale-100 transition-all">
-                      <Play className="w-8 h-8 text-white fill-current ml-1" />
-                    </div>
-                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center shadow-2xl scale-75 group-hover:scale-100 transition-all"><Play className="w-8 h-8 text-white fill-current ml-1" /></div></div>
                 </div>
-                
-                <button 
-                  onClick={(e) => { e.stopPropagation(); toggleFavoriteIptvChannel(ch); }} 
-                  className={cn(
-                    "absolute top-2 right-2 w-11 h-11 rounded-full backdrop-blur-xl border border-white/10 flex items-center justify-center transition-all z-30 focusable",
-                    isStarred(ch.stream_id) ? "bg-yellow-500 text-black opacity-100 shadow-glow" : "bg-black/60 text-white/40 opacity-0 group-hover:opacity-100"
-                  )}
-                >
+                <button onClick={(e) => { e.stopPropagation(); toggleFavoriteIptvChannel(ch); }} className={cn("absolute top-2 right-2 w-11 h-11 rounded-full backdrop-blur-xl border border-white/10 flex items-center justify-center transition-all z-30 focusable", isStarred(ch.stream_id) ? "bg-yellow-500 text-black opacity-100 shadow-glow" : "bg-black/60 text-white/40 opacity-0 group-hover:opacity-100")}>
                   <Star className={cn("w-6 h-6", isStarred(ch.stream_id) && "fill-current")} />
                 </button>
-
-                <span className={cn(
-                  "font-black text-base text-center truncate w-full px-2 transition-colors",
-                  isStarred(ch.stream_id) ? "text-yellow-500" : "text-white/70 group-hover:text-white"
-                )}>
-                  {ch.name}
-                </span>
+                <span className={cn("font-black text-base text-center truncate w-full px-2 transition-colors", isStarred(ch.stream_id) ? "text-yellow-500" : "text-white/70 group-hover:text-white")}>{ch.name}</span>
               </div>
             ))}
           </div>

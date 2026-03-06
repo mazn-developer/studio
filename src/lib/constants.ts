@@ -19,7 +19,7 @@ export const JSONBIN_CLUBS_BIN_ID = '699d8c2aae596e708f452936';
 export const JSONBIN_SAVED_VIDEOS_BIN_ID = '68e4ac2e43b1c97be95d24af';
 export const JSONBIN_PRAYER_TIMES_BIN_ID = '69a00f6eae596e708f4b7291';
 export const JSONBIN_RECITERS_BIN_ID = '6909c1cd43b1c97be997b522';
-export const JSONBIN_IPTV_FAVS_BIN_ID = '69a87b8bd0ea881f40eeec0c';
+export const JSONBIN_IPTV_FAVS_BIN_ID = '69a87b8bd0ea881f40eeec0c'; // Updated Bin ID
 export const JSONBIN_ACCESS_KEY_CHANNELS = '$2a$10$J8o3WrPtnqmKAd///uDw6.BOWnGIBekHFOImbeEZZwsJ/h/XPbVUy';
 
 export const SURAHS_LIST = [
@@ -71,7 +71,6 @@ export function convertTo12Hour(time24h: string | undefined): string {
     if (!time24h || typeof time24h !== 'string' || time24h === '--:--') {
         return time24h || '--:--';
     }
-    // Correctly split and parse numbers, ensuring it works even if digits are weird
     const parts = time24h.split(':');
     if (parts.length < 2) return time24h;
     
