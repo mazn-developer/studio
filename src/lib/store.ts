@@ -71,6 +71,7 @@ interface MediaState {
   isMinimized: boolean;
   isFullScreen: boolean;
   dockSide: 'left' | 'right';
+  showIslands: boolean;
   addChannel: (channel: YouTubeChannel) => void;
   removeChannel: (channelid: string) => void;
   incrementChannelClick: (channelid: string) => void;
@@ -101,6 +102,8 @@ interface MediaState {
   setIsFullScreen: (fullScreen: boolean) => void;
   setDockSide: (side: 'left' | 'right') => void;
   toggleDockSide: () => void;
+  setShowIslands: (show: boolean) => void;
+  toggleShowIslands: () => void;
 }
 
 const updateBin = async (binId: string, data: any) => {
@@ -144,6 +147,7 @@ export const useMediaStore = create<MediaState>()(
       isMinimized: false,
       isFullScreen: false,
       dockSide: 'left',
+      showIslands: true,
 
       addChannel: (channel) => {
         set((state) => {
@@ -231,7 +235,7 @@ export const useMediaStore = create<MediaState>()(
         set((state) => {
           const exists = state.favoriteIptvChannels.some(c => c.stream_id === channel.stream_id);
           const newList = exists ? state.favoriteIptvChannels.filter(c => c.stream_id !== channel.stream_id) : [...state.favoriteIptvChannels, { ...channel, starred: true }];
-          updateBin("69a87b8bd0ea881f40eeec0c", newList);
+          updateBin(JSONBIN_IPTV_FAVS_BIN_ID, newList);
           return { favoriteIptvChannels: newList };
         });
       },
@@ -257,7 +261,14 @@ export const useMediaStore = create<MediaState>()(
       toggleReminder: (id) => set((state) => ({ reminders: state.reminders.map(r => r.id === id ? { ...r, completed: !r.completed } : r) })),
       setAiSuggestions: (suggestions) => set({ aiSuggestions: suggestions }),
       setActiveVideo: (video) => set({ activeVideo: video, activeIptv: null, isPlaying: !!video, isMinimized: false, isFullScreen: !!video }),
-      setActiveIptv: (channel) => set({ activeIptv: channel, activeVideo: null, isPlaying: !!channel, isMinimized: false, isFullScreen: !!channel }),
+      setActiveIptv: (channel) => {
+        const state = get();
+        if (state.favoriteIptvChannels.some(c => c.stream_id === channel?.stream_id)) {
+          const idx = state.favoriteIptvChannels.findIndex(c => c.stream_id === channel?.stream_id);
+          set({ iptvPlaylist: state.favoriteIptvChannels, iptvPlaylistIndex: idx });
+        }
+        set({ activeIptv: channel, activeVideo: null, isPlaying: !!channel, isMinimized: false, isFullScreen: !!channel });
+      },
       setPlaylist: (videos) => {
         const shuffled = [...videos].sort(() => Math.random() - 0.5);
         set({ playlist: shuffled, playlistIndex: 0, activeVideo: shuffled[0], activeIptv: null, isPlaying: true, isMinimized: false, isFullScreen: true });
@@ -279,6 +290,8 @@ export const useMediaStore = create<MediaState>()(
       setIsFullScreen: (fullScreen) => set({ isFullScreen: fullScreen, isMinimized: false }),
       setDockSide: (side) => set({ dockSide: side }),
       toggleDockSide: () => set((state) => ({ dockSide: state.dockSide === 'left' ? 'right' : 'left' })),
+      setShowIslands: (show) => set({ showIslands: show }),
+      toggleShowIslands: () => set((state) => ({ showIslands: !state.showIslands })),
     }),
     {
       name: "drivecast-jsonbin-v3",
@@ -292,7 +305,8 @@ export const useMediaStore = create<MediaState>()(
         mapSettings: state.mapSettings,
         reminders: state.reminders,
         prayerTimes: state.prayerTimes,
-        dockSide: state.dockSide
+        dockSide: state.dockSide,
+        showIslands: state.showIslands
       }),
     }
   )
@@ -311,8 +325,8 @@ if (typeof window !== "undefined") {
         if (data.record.matches) useMediaStore.setState({ belledMatchIds: data.record.matches });
       }
 
-      const iptvRes = await fetch(`https://api.jsonbin.io/v3/b/69a87b8bd0ea881f40eeec0c/latest`, { headers: { 'X-Master-Key': JSONBIN_MASTER_KEY } });
-      if (iptvRes.ok) { const data = await iptvRes.json(); useMediaStore.setState({ favoriteIptvChannels: data.record }); }
+      const iptvRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_IPTV_FAVS_BIN_ID}/latest`, { headers: { 'X-Master-Key': JSONBIN_MASTER_KEY } });
+      if (iptvRes.ok) { const data = await iptvRes.ok ? await iptvRes.json() : { record: [] }; useMediaStore.setState({ favoriteIptvChannels: data.record || [] }); }
     } catch (e) { console.error("Bin Sync Error:", e); }
   };
   syncWithBins();

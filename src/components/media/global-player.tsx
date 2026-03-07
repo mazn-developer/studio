@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useMediaStore } from "@/lib/store";
-import { X, Minimize2, Bookmark, Monitor, ChevronDown, Play, Pause, Tv, List } from "lucide-react";
+import { X, Minimize2, Bookmark, Monitor, ChevronDown, Play, Pause, Tv, List, ChevronRight, ChevronLeft, Youtube, Activity, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
@@ -18,6 +19,8 @@ export function GlobalVideoPlayer() {
     isFullScreen,
     videoProgress,
     nextTrack,
+    nextIptvChannel,
+    prevIptvChannel,
     setActiveVideo, 
     setActiveIptv,
     setIsPlaying, 
@@ -26,6 +29,8 @@ export function GlobalVideoPlayer() {
     toggleSaveVideo,
     savedVideos,
     toggleFavoriteIptvChannel,
+    showIslands,
+    toggleShowIslands
   } = useMediaStore();
   
   const [mounted, setMounted] = useState(false);
@@ -40,7 +45,6 @@ export function GlobalVideoPlayer() {
     }
   }, []);
 
-  // Strict Sandbox & Security
   useEffect(() => {
     const handleFrameSecurity = () => {
       const iframes = document.querySelectorAll('iframe');
@@ -59,18 +63,15 @@ export function GlobalVideoPlayer() {
     if (!activeVideo || !mounted || activeIptv) return;
     
     const initPlayer = () => {
-      // RADICAL SMOOTHNESS FIX: Reuse player instance and check for API readiness
       if (playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
         playerRef.current.loadVideoById(activeVideo.id);
         updateQuality(playerRef.current);
         return;
       }
       
-      // If player element already exists but instance doesn't, or it's first time
       playerRef.current = new (window as any).YT.Player('youtube-player-element', {
         height: '100%',
         width: '100%',
-        host: 'https://www.youtube-nocookie.com',
         videoId: activeVideo.id,
         playerVars: {
           autoplay: 1,
@@ -91,7 +92,7 @@ export function GlobalVideoPlayer() {
           onStateChange: (event: any) => {
             if (event.data === 1) setIsPlaying(true);
             else if (event.data === 2) setIsPlaying(false);
-            else if (event.data === 0) nextTrack(); // AUTO-NEXT FOR PLAYLISTS
+            else if (event.data === 0) nextTrack();
           }
         }
       });
@@ -136,14 +137,13 @@ export function GlobalVideoPlayer() {
         : isFullScreen
           ? "inset-0 w-full h-full bg-black rounded-0"
           : "bottom-8 right-4 w-[50vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95"
-    )}
-    // FINAL SMOOTHNESS FIX: Hardware Acceleration via CSS
-    style={{ transform: 'translate3d(0,0,0)', willChange: 'transform' }}>
+    )}>
       <div className={cn("absolute inset-0 transition-opacity duration-700", isMinimized ? "opacity-0" : "opacity-100")}>
         {activeVideo ? (
           <div id="youtube-player-element" className="w-full h-full"></div>
         ) : (
           <iframe 
+            key={activeIptv?.stream_id}
             src={`${activeIptv?.url}${activeIptv?.url?.includes('?') ? '&' : '?'}autoplay=1&mute=0`}
             className="w-full h-full border-none"
             allow="autoplay; fullscreen"
@@ -152,18 +152,51 @@ export function GlobalVideoPlayer() {
         )}
       </div>
 
+      {!isMinimized && (
+        <div className={cn(
+          "absolute top-0 left-0 right-0 p-8 z-[5100] transition-all duration-700",
+          isFullScreen ? "bg-gradient-to-b from-black/80 to-transparent" : "bg-gradient-to-b from-black/40 to-transparent"
+        )}>
+          <div className="flex items-center gap-4 text-right dir-rtl">
+            <div className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center border",
+              activeIptv ? "bg-emerald-500/20 border-emerald-500/20" : "bg-red-500/20 border-red-500/20"
+            )}>
+              {activeIptv ? <Tv className="w-6 h-6 text-emerald-500" /> : <Youtube className="w-6 h-6 text-red-500" />}
+            </div>
+            <div className="flex flex-col">
+              <h2 className={cn(
+                "font-black text-white truncate drop-shadow-xl font-headline",
+                isFullScreen ? "text-2xl" : "text-lg"
+              )}>
+                {activeVideo?.title || activeIptv?.name}
+              </h2>
+              <span className="text-[10px] text-white/40 font-bold uppercase tracking-[0.3em]">
+                {activeIptv ? "Premium Live Feed" : "YouTube Direct Signal"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isMinimized && (
         <div className="h-full flex items-center justify-between px-8 relative z-10" onClick={() => setIsFullScreen(true)}>
-          <div className="flex items-center gap-4 flex-1 min-w-0">
+          <div className="flex items-center gap-4 flex-1 min-w-0 text-right">
             <div className="relative w-20 h-14 rounded-xl overflow-hidden border border-white/10 bg-zinc-900">
               <Image src={activeVideo?.thumbnail || activeIptv?.stream_icon || ""} alt="" fill className="object-cover" />
             </div>
-            <div className="text-right">
+            <div className="flex flex-col">
               <h4 className="text-base font-black text-white truncate max-w-[200px]">{activeVideo?.title || activeIptv?.name}</h4>
-              <span className="text-[9px] text-accent font-black uppercase">Capsule Feed (144p)</span>
+              <span className="text-[9px] text-accent font-black uppercase">Capsule Feed</span>
             </div>
           </div>
           <div className="flex gap-3">
+            {activeIptv && (
+              <>
+                <button onClick={(e) => { e.stopPropagation(); prevIptvChannel(); }} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10"><ChevronRight className="w-5 h-5" /></button>
+                <button onClick={(e) => { e.stopPropagation(); nextIptvChannel(); }} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10"><ChevronLeft className="w-5 h-5" /></button>
+              </>
+            )}
             <button onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10">{isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}</button>
             <button onClick={(e) => { e.stopPropagation(); setActiveVideo(null); setActiveIptv(null); }} className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center"><X className="w-5 h-5" /></button>
           </div>
@@ -176,10 +209,26 @@ export function GlobalVideoPlayer() {
           isFullScreen ? "left-10 bottom-10 scale-150 origin-bottom-left" : "right-12 bottom-12 scale-90"
         )}>
           <div className="flex items-center gap-2 liquid-glass p-3 rounded-full border border-white/20 shadow-2xl">
+            {activeIptv && (
+              <>
+                <button onClick={prevIptvChannel} title="Previous Channel" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center focusable"><ChevronRight className="w-6 h-6" /></button>
+                <button onClick={nextIptvChannel} title="Next Channel" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center focusable"><ChevronLeft className="w-6 h-6" /></button>
+                <div className="w-px h-8 bg-white/20 mx-1" />
+              </>
+            )}
+            
+            <button onClick={toggleShowIslands} title={showIslands ? "Hide Islands" : "Show Islands"} className={cn("w-12 h-12 rounded-full flex items-center justify-center focusable transition-all", showIslands ? "bg-accent/20 text-accent border-accent/20" : "bg-white/5 text-white/40 border-white/10")}>
+              {showIslands ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+            </button>
+
             <button onClick={() => setIsMinimized(true)} title="Minimize" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center focusable"><ChevronDown className="w-5 h-5" /></button>
             <button onClick={() => setIsFullScreen(!isFullScreen)} title="Cinema Mode" className={cn("w-12 h-12 rounded-full flex items-center justify-center focusable", isFullScreen && "bg-primary border-primary")}><Monitor className="w-5 h-5" /></button>
-            <button onClick={handleAddToIptv} title="Add to IPTV" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center focusable"><Tv className="w-5 h-5 text-emerald-400" /></button>
-            <button onClick={() => toggleSaveVideo(activeVideo!)} title="Bookmark" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center focusable"><Bookmark className={cn("w-5 h-5", savedVideos.some(v => v.id === activeVideo?.id) && "fill-current text-primary")} /></button>
+            {activeVideo && (
+              <>
+                <button onClick={handleAddToIptv} title="Add to IPTV" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center focusable"><Tv className="w-5 h-5 text-emerald-400" /></button>
+                <button onClick={() => toggleSaveVideo(activeVideo!)} title="Bookmark" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center focusable"><Bookmark className={cn("w-5 h-5", savedVideos.some(v => v.id === activeVideo?.id) && "fill-current text-primary")} /></button>
+              </>
+            )}
             <button onClick={() => router.push('/iptv')} title="IPTV Library" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center focusable"><List className="w-5 h-5" /></button>
             <div className="w-px h-8 bg-white/20 mx-1" />
             <button onClick={() => { setActiveVideo(null); setActiveIptv(null); }} title="Close Player" className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center focusable"><X className="w-5 h-5" /></button>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -5,7 +6,7 @@ import { Match } from "@/lib/football-data";
 import { fetchFootballData } from "@/lib/football-api";
 import { useMediaStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { ChevronUp, BookOpen, Sparkles, Moon, Sun, Coffee, Stars, BellRing } from "lucide-react";
+import { ChevronUp, BookOpen, Sparkles, Moon, Sun, Coffee, Stars, BellRing, Timer, Clock } from "lucide-react";
 import { FluidGlass } from "@/components/ui/fluid-glass";
 import { convertTo12Hour } from "@/lib/constants";
 
@@ -17,7 +18,7 @@ interface IslandItem {
 }
 
 export function LiveMatchIsland() {
-  const { favoriteTeams, prayerTimes, belledMatchIds, reminders, isFullScreen } = useMediaStore();
+  const { favoriteTeams, prayerTimes, belledMatchIds, reminders, showIslands } = useMediaStore();
   const [topMatches, setTopMatches] = useState<Match[]>([]);
   const [dhikr] = useState("سبحان الله وبحمده");
   const [skippedIds, setSkippedIds] = useState<string[]>([]);
@@ -31,12 +32,11 @@ export function LiveMatchIsland() {
   }, []);
 
   const fetchMatches = useCallback(async () => {
-    if (isFullScreen) return;
     try {
       const matches = await fetchFootballData('today');
       setTopMatches(matches || []);
     } catch (e) {}
-  }, [isFullScreen]);
+  }, []);
 
   useEffect(() => {
     fetchMatches();
@@ -52,6 +52,15 @@ export function LiveMatchIsland() {
 
   const cleanTime = (t: string) => convertTo12Hour(t).replace(/\s?[AP]M/i, '');
 
+  const formatCountdown = (diffSeconds: number) => {
+    const absSecs = Math.abs(diffSeconds);
+    const h = Math.floor(absSecs / 3600);
+    const m = Math.floor((absSecs % 3600) / 60);
+    const s = absSecs % 60;
+    if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   const getMinuteBadgeColor = (min: number) => {
     if (min <= 30) return "bg-emerald-500 text-white";
     if (min <= 70) return "bg-yellow-500 text-black";
@@ -62,30 +71,8 @@ export function LiveMatchIsland() {
     if (!prayerTimes?.length) return null;
     const day = now.getDate().toString().padStart(2, '0');
     const pData = prayerTimes.find(p => p.date.endsWith(`-${day}`)) || prayerTimes[0];
+    const totalCurrentSecs = (now.getHours() * 3600) + (now.getMinutes() * 60) + now.getSeconds();
     const currentMins = now.getHours() * 60 + now.getMinutes();
-
-    if (pData) {
-      const fajrMins = tToM(pData.fajr);
-      const sunriseMins = tToM(pData.sunrise);
-      const asrMins = tToM(pData.asr);
-      const maghribMins = tToM(pData.maghrib);
-      const duhaStart = sunriseMins + 15;
-      const dhuhrMins = tToM(pData.dhuhr);
-
-      if (currentMins >= fajrMins && currentMins < sunriseMins + 30) {
-        return { name: "أذكار الصباح", label: "تذكير نشط", value: "", icon: Sun, color: "text-orange-400" };
-      }
-      if (currentMins >= duhaStart && currentMins < dhuhrMins - 15) {
-        return { name: "صلاة الضحى", label: "تذكير نشط", value: "", icon: Coffee, color: "text-emerald-400" };
-      }
-      const eveningStart = asrMins + 20; 
-      if (currentMins >= eveningStart && currentMins < maghribMins) {
-        return { name: "أذكار المساء", label: "تذكير نشط", value: "", icon: Moon, color: "text-blue-400" };
-      }
-      if (currentMins >= 0 && currentMins < fajrMins - 30) {
-        return { name: "قيام الليل", label: "تذكير نشط", value: "", icon: Stars, color: "text-purple-400" };
-      }
-    }
 
     const list = [
       { name: "الفجر", time: pData.fajr, iqamah: 25 },
@@ -95,16 +82,65 @@ export function LiveMatchIsland() {
       { name: "العشاء", time: pData.isha, iqamah: 20 },
     ];
 
-    let prayer = list.find(p => tToM(p.time) + p.iqamah + 10 > currentMins);
-    if (!prayer) prayer = list[0];
+    // 1. Check for the +/- 10 minute windows for ANY prayer or iqamah (CRITICAL WINDOW)
+    for (const p of list) {
+      const azanSecs = tToM(p.time) * 60;
+      const iqamahSecs = azanSecs + (p.iqamah * 60);
 
-    return { 
-      name: prayer.name, 
-      label: "الصلاة القادمة", 
-      value: cleanTime(prayer.time),
-      icon: BellRing,
-      color: "text-white"
-    };
+      // Azan Window (-10 to +10 mins)
+      const azanDiff = azanSecs - totalCurrentSecs;
+      if (Math.abs(azanDiff) <= 600) {
+        const sign = azanDiff >= 0 ? "-" : "+";
+        return {
+          name: p.name,
+          label: azanDiff >= 0 ? "الأذان خلال" : "مضى على الأذان",
+          value: `${sign}${formatCountdown(Math.abs(azanDiff))}`,
+          icon: Clock,
+          color: azanDiff >= 0 ? "text-accent animate-pulse" : "text-accent",
+          mode: 'countdown'
+        };
+      }
+
+      // Iqamah Window (-10 to +10 mins)
+      const iqamahDiff = iqamahSecs - totalCurrentSecs;
+      if (Math.abs(iqamahDiff) <= 600) {
+        const sign = iqamahDiff >= 0 ? "-" : "+";
+        return {
+          name: `إقامة ${p.name}`,
+          label: iqamahDiff >= 0 ? "الإقامة خلال" : "مضى من الإقامة",
+          value: `${sign}${formatCountdown(Math.abs(iqamahDiff))}`,
+          icon: iqamahDiff >= 0 ? Timer : BellRing,
+          color: "text-accent",
+          mode: 'iqamah'
+        };
+      }
+    }
+
+    // 2. Spiritual reminders (Active during their periods, but no numeric count)
+    if (pData) {
+      const fajrMins = tToM(pData.fajr);
+      const sunriseMins = tToM(pData.sunrise);
+      const asrMins = tToM(pData.asr);
+      const maghribMins = tToM(pData.maghrib);
+      const dhuhrMins = tToM(pData.dhuhr);
+      const duhaStart = sunriseMins + 15;
+
+      if (currentMins >= fajrMins && currentMins < sunriseMins + 30) {
+        return { name: "أذكار الصباح", label: "تذكير نشط", value: "", icon: Sun, color: "text-orange-400", mode: 'reminder' };
+      }
+      if (currentMins >= duhaStart && currentMins < dhuhrMins - 15) {
+        return { name: "صلاة الضحى", label: "تذكير نشط", value: "", icon: Coffee, color: "text-emerald-400", mode: 'reminder' };
+      }
+      if (currentMins >= asrMins + 20 && currentMins < maghribMins) {
+        return { name: "أذكار المساء", label: "تذكير نشط", value: "", icon: Moon, color: "text-blue-400", mode: 'reminder' };
+      }
+      if (currentMins >= 0 && currentMins < fajrMins - 30) {
+        return { name: "قيام الليل", label: "تذكير نشط", value: "", icon: Stars, color: "text-purple-400", mode: 'reminder' };
+      }
+    }
+
+    // 3. Default: Return null to show the Dhikr bar if not in a critical 10-min window
+    return null;
   }, [now, prayerTimes]);
 
   const islandQueue = useMemo(() => {
@@ -138,7 +174,7 @@ export function LiveMatchIsland() {
 
   const handleSkip = (id: string) => { setSkippedIds(p => [...p, id]); setActiveIndex(0); };
 
-  if (isFullScreen) return null;
+  if (!showIslands) return null;
 
   const activeItem = islandQueue[activeIndex];
   const isMatchExpanded = activeItem?.type === 'match' && isDetailedManually;
@@ -146,18 +182,23 @@ export function LiveMatchIsland() {
   return (
     <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-4 pointer-events-none">
       {prayerIslandData && (
-        <div className="pointer-events-auto group relative">
-          <div className="liquid-glass backdrop-blur-[120px] rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,1)] transition-all duration-700 overflow-hidden relative border border-white/10 w-64 h-14 px-6">
+        <div className="pointer-events-auto group relative cursor-pointer" onClick={() => setActiveIndex((activeIndex + 1) % (islandQueue.length || 1))}>
+          <div className={cn(
+            "liquid-glass backdrop-blur-[120px] rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,1)] transition-all duration-700 overflow-hidden relative border border-white/10 w-64 h-14 px-6",
+            prayerIslandData.mode === 'iqamah' || prayerIslandData.mode === 'active' ? "ring-2 ring-accent/40 bg-accent/5" : ""
+          )}>
             <FluidGlass />
             <div className="h-full flex items-center justify-between relative z-10 gap-4">
               <div className={cn("w-9 h-9 rounded-full flex items-center justify-center bg-white/10", prayerIslandData.color)}>
                 <prayerIslandData.icon className="w-4.5 h-4.5" />
               </div>
-              <div className="flex flex-col text-right flex-1">
-                <span className="font-black text-white uppercase tracking-widest leading-none mb-1" style={{ fontSize: '0.7rem' }}>{prayerIslandData.label}</span>
+              <div className="flex flex-col text-right flex-1 min-w-0">
+                <span className="font-black text-white/40 uppercase tracking-widest leading-none mb-1 truncate" style={{ fontSize: '0.6rem' }}>{prayerIslandData.label}</span>
                 <div className="flex items-baseline justify-end gap-2">
-                  <span className="text-lg font-black text-white tracking-tight">{prayerIslandData.name}</span>
-                  <span className="text-lg font-black text-white/60 tabular-nums">{prayerIslandData.value}</span>
+                  <span className="text-lg font-black text-white tracking-tight truncate">{prayerIslandData.name}</span>
+                  {prayerIslandData.value && (
+                    <span className="text-base font-black text-white/80 tabular-nums">{prayerIslandData.value}</span>
+                  )}
                 </div>
               </div>
             </div>
