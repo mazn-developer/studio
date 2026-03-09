@@ -19,6 +19,7 @@ export function GlobalVideoPlayer() {
     isFullScreen,
     videoProgress,
     nextTrack,
+    prevTrack,
     nextIptvChannel,
     prevIptvChannel,
     setActiveVideo, 
@@ -46,10 +47,55 @@ export function GlobalVideoPlayer() {
     }
   }, []);
 
+  // Media Session API for Background Playback and System Controls
+  useEffect(() => {
+    if ('mediaSession' in navigator && (activeVideo || activeIptv)) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: activeVideo?.title || activeIptv?.name || "DriveCast Media",
+        artist: activeVideo?.channelTitle || "Premium Stream",
+        artwork: [
+          { src: activeVideo?.thumbnail || activeIptv?.stream_icon || "", sizes: '512x512', type: 'image/jpeg' }
+        ]
+      });
+
+      navigator.mediaSession.setActionHandler('play', () => setIsPlaying(true));
+      navigator.mediaSession.setActionHandler('pause', () => setIsPlaying(false));
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        if (activeIptv) nextIptvChannel(); else nextTrack();
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        if (activeIptv) prevIptvChannel(); else prevTrack();
+      });
+    }
+  }, [activeVideo, activeIptv, setIsPlaying, nextTrack, prevTrack, nextIptvChannel, prevIptvChannel]);
+
+  // Keyboard Binding for CH+ and CH- (Remote Keys 1 and 3)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!activeVideo && !activeIptv) return;
+
+      const key = e.key;
+      // Map '3' to Channel Up (Next)
+      if (key === "3") {
+        e.preventDefault();
+        if (activeIptv) nextIptvChannel();
+        else if (activeVideo) nextTrack();
+      } 
+      // Map '1' to Channel Down (Previous)
+      else if (key === "1") {
+        e.preventDefault();
+        if (activeIptv) prevIptvChannel();
+        else if (activeVideo) prevTrack();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeVideo, activeIptv, nextTrack, prevTrack, nextIptvChannel, prevIptvChannel]);
+
   const initYouTubePlayer = useCallback((videoId: string) => {
     if (!containerRef.current) return;
     
-    // Smooth Re-use of Instance
     if (playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
       try {
         playerRef.current.loadVideoById({
@@ -62,7 +108,6 @@ export function GlobalVideoPlayer() {
       }
     }
 
-    // Clean Init
     containerRef.current.innerHTML = '<div id="youtube-source-element"></div>';
     playerRef.current = new (window as any).YT.Player('youtube-source-element', {
       height: '100%',
@@ -82,8 +127,14 @@ export function GlobalVideoPlayer() {
       events: {
         onReady: (event: any) => event.target.playVideo(),
         onStateChange: (event: any) => {
-          if (event.data === (window as any).YT.PlayerState.PLAYING) setIsPlaying(true);
-          else if (event.data === (window as any).YT.PlayerState.PAUSED) setIsPlaying(false);
+          if (event.data === (window as any).YT.PlayerState.PLAYING) {
+            setIsPlaying(true);
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+          }
+          else if (event.data === (window as any).YT.PlayerState.PAUSED) {
+            setIsPlaying(false);
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+          }
           else if (event.data === (window as any).YT.PlayerState.ENDED) nextTrack();
         },
       }
@@ -100,7 +151,6 @@ export function GlobalVideoPlayer() {
         (window as any).onYouTubeIframeAPIReady = () => initYouTubePlayer(activeVideo.id);
       }
     } else {
-      // Release Resources when not in YouTube
       if (playerRef.current) {
         try { playerRef.current.destroy(); } catch(e) {}
         playerRef.current = null;
@@ -135,12 +185,11 @@ export function GlobalVideoPlayer() {
             : "bottom-8 right-4 w-[50vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95"
       )}
       style={{
-        transform: 'translate3d(0,0,0)', // GPU Force
+        transform: 'translate3d(0,0,0)',
         willChange: 'transform',
         contain: 'layout paint'
       }}
     >
-      {/* Isolation Layer for Core Playback */}
       <div 
         className={cn("absolute inset-0 transition-opacity duration-700", isMinimized ? "opacity-0" : "opacity-100")}
         style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}
@@ -159,7 +208,6 @@ export function GlobalVideoPlayer() {
         )}
       </div>
 
-      {/* Info Header Overlay */}
       {!isMinimized && (
         <div className={cn(
           "absolute top-0 left-0 right-0 p-8 z-[5100] transition-all duration-700",
@@ -187,7 +235,6 @@ export function GlobalVideoPlayer() {
         </div>
       )}
 
-      {/* Minimized Capsule View */}
       {isMinimized && (
         <div className="h-full flex items-center justify-between px-8 relative z-10" onClick={() => setIsFullScreen(true)}>
           <div className="flex items-center gap-4 flex-1 min-w-0 text-right">
@@ -212,7 +259,6 @@ export function GlobalVideoPlayer() {
         </div>
       )}
 
-      {/* Control Bar Overlay */}
       {!isMinimized && (
         <div className={cn(
           "fixed z-[5200] flex items-center gap-4 transition-all duration-500",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { MoonWidget } from "./widgets/moon-widget";
 import { DateAndClockWidget } from "./widgets/date-and-clock-widget";
@@ -8,11 +9,20 @@ import { WeatherWidget } from "./widgets/weather-widget";
 import { PlayingNowWidget } from "./widgets/playing-now-widget";
 import { PrayerTimelineWidget } from "./widgets/prayer-timeline-widget";
 import { MapWidget } from "./widgets/map-widget";
-import { LatestVideosWidget } from "./widgets/latest-videos-widget";
-import { YouTubeSavedWidget } from "./widgets/youtube-saved-widget";
 import { useMediaStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "@/components/ui/carousel";
+
+// LAZY LOAD HEAVY BOTTOM WIDGETS FOR PERFORMANCE
+const LatestVideosWidget = dynamic(() => import("./widgets/latest-videos-widget").then(m => m.LatestVideosWidget), { 
+  ssr: false,
+  loading: () => <div className="h-64 w-full bg-zinc-900/20 animate-pulse rounded-[2.5rem]" />
+});
+
+const YouTubeSavedWidget = dynamic(() => import("./widgets/youtube-saved-widget").then(m => m.YouTubeSavedWidget), { 
+  ssr: false,
+  loading: () => <div className="h-64 w-full bg-zinc-900/20 animate-pulse rounded-[2.5rem]" />
+});
 
 export function DashboardView() {
   const { favoriteChannels, activeVideo } = useMediaStore();
@@ -47,7 +57,7 @@ export function DashboardView() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[380px]">
-        {/* Left: Interactive Map */}
+        {/* Left: Interactive Map - LOADED FIRST */}
         <div className="md:col-span-4 glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl h-full focusable" tabIndex={0} data-nav-id="map-widget-container">
           <MapWidget />
         </div>
@@ -59,13 +69,14 @@ export function DashboardView() {
               src="https://dmusera.netlify.app/es350gb.png" 
               alt="Lexus ES" 
               fill
+              priority
               className="object-cover drop-shadow-[0_25px_60px_rgba(0,0,0,0.9)]"
             />
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
         </div>
 
-        {/* Right: Dynamic Widget Carousel */}
+        {/* Right: Dynamic Widget Carousel - LOADED FIRST */}
         <div className="md:col-span-4 flex flex-col gap-6 h-full relative">
           <div className="flex-[1.8] relative overflow-hidden focusable group bg-black/20 rounded-[2.5rem] shadow-2xl" tabIndex={0} data-nav-id="moon-widget-container">
             <Carousel setApi={setApi} opts={{ loop: true }} className="w-full h-full">
@@ -110,6 +121,7 @@ export function DashboardView() {
         <PrayerTimelineWidget />
       </div>
 
+      {/* DELAYED LOADING FOR BOTTOM SECTIONS */}
       <div className="w-full space-y-8">
         <LatestVideosWidget channels={starredChannels} />
         <YouTubeSavedWidget />

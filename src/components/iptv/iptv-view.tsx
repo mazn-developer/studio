@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -67,7 +68,14 @@ export function IptvView() {
     try {
       const data = await getIptvChannels(catId);
       if (Array.isArray(data)) {
-        setChannels(data);
+        // RADICAL FIX: Force all fetched channels to type:web and .m3u8 format
+        // If stream_type is live, we explicitly use the .m3u8 format to handle redirects
+        const transformed = data.map((ch: any) => ({
+          ...ch,
+          type: 'web',
+          url: `http://playstop.watch:2095/live/W87d737/Pd37qj34/${ch.stream_id}.m3u8`
+        }));
+        setChannels(transformed);
       }
     } finally {
       setLoading(false);
@@ -105,7 +113,8 @@ export function IptvView() {
       stream_icon: manualIcon || "https://picsum.photos/seed/iptv/200",
       category_id: "direct",
       starred: true,
-      type: 'web'
+      type: 'web',
+      stream_type: manualUrl.includes('.m3u8') ? 'live' : 'live' // Default custom added to live type
     };
 
     toggleFavoriteIptvChannel(newChannel);
