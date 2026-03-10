@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useCallback } from "react";
@@ -198,13 +199,13 @@ export function SettingsView() {
           </div>
           <div className="lg:col-span-6 space-y-6 overflow-y-auto max-h-[600px] pr-2 no-scrollbar">
             {reminders.map((r) => {
-              const color = r.color || 'text-blue-400';
+              const baseColor = r.color || 'text-blue-400';
               return (
                 <Card key={r.id} className="bg-zinc-900/50 border-white/5 rounded-[2.5rem] p-6 group relative overflow-hidden">
                   <div className="flex items-center justify-between relative z-10">
                     <div className="flex items-center gap-6">
-                      <div className={cn("w-16 h-16 rounded-3xl flex items-center justify-center border-2 transition-all", (r.color || 'text-blue-400').replace('text-', 'bg-') + '/10', (r.color || 'text-blue-400').replace('text-', 'border-') + '/20')}>
-                        <Bell className={cn("w-8 h-8", r.color || 'text-blue-400')} />
+                      <div className={cn("w-16 h-16 rounded-3xl flex items-center justify-center border-2 transition-all", baseColor.replace('text-', 'bg-') + '/10', baseColor.replace('text-', 'border-') + '/20')}>
+                        <Bell className={cn("w-8 h-8", baseColor)} />
                       </div>
                       <div className="flex flex-col gap-1 text-right">
                         <h3 className="font-black text-2xl text-white">{r.label}</h3>

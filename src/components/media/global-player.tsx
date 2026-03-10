@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useMediaStore } from "@/lib/store";
@@ -8,9 +9,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { fetchChannelDetails } from "@/lib/youtube";
 
-/**
- * GlobalVideoPlayer - optimized for "Native Performance" using CSS containment and GPU isolation.
- */
 export function GlobalVideoPlayer() {
   const router = useRouter();
   const { 
@@ -49,7 +47,6 @@ export function GlobalVideoPlayer() {
     }
   }, []);
 
-  // Background Audio Support via Media Session API
   useEffect(() => {
     if ('mediaSession' in navigator && (activeVideo || activeIptv)) {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -66,7 +63,6 @@ export function GlobalVideoPlayer() {
     }
   }, [activeVideo, activeIptv, setIsPlaying, nextTrack, nextIptvChannel, prevIptvChannel]);
 
-  // Key Bindings: 1 for Previous, 3 for Next (CH+/CH-)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!activeVideo && !activeIptv) return;
@@ -121,7 +117,14 @@ export function GlobalVideoPlayer() {
       
       <div className={cn("absolute inset-0 transition-opacity duration-700", isMinimized ? "opacity-0" : "opacity-100")} style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
         {activeVideo ? <div key={activeVideo.id} ref={containerRef} className="w-full h-full" style={{ background: '#000' }} /> : 
-        <iframe key={activeIptv?.stream_id} src={`${activeIptv?.url}${activeIptv?.url?.includes('?') ? '&' : '?'}autoplay=1&mute=0`} className="w-full h-full border-none" allow="autoplay; fullscreen" sandbox="allow-forms allow-scripts allow-same-origin" style={{ background: '#000' }} />}
+        <iframe 
+          key={activeIptv?.stream_id} 
+          src={`${activeIptv?.url}${activeIptv?.url?.includes('?') ? '&' : '?'}autoplay=1&mute=0`} 
+          className="w-full h-full border-none" 
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen" 
+          referrerPolicy="no-referrer"
+          style={{ background: '#000' }} 
+        />}
       </div>
 
       {isMinimized && (
@@ -142,7 +145,6 @@ export function GlobalVideoPlayer() {
         </div>
       )}
 
-      {/* Optimized Floating Collapsible Controls */}
       {!isMinimized && (
         <div className={cn(
           "fixed z-[5200] flex items-center transition-all duration-500",

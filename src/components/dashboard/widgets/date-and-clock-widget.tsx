@@ -1,10 +1,8 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 
-/**
- * Clock Widget with cross-gradient SVG styling.
- */
 export function DateAndClockWidget() {
   const [now, setNow] = useState<Date | null>(null);
   

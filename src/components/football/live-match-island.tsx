@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -139,7 +140,8 @@ export function LiveMatchIsland() {
       
       if (priority > 0) items.push({ id: m.id, type: 'match', priority, data: m });
     });
-    return items.sort((a, b) => b.priority - a.priority).slice(0, 4);
+    // LIMIT TO 3 MATCH ISLANDS
+    return items.sort((a, b) => b.priority - a.priority).slice(0, 3);
   }, [topMatches, skippedMatchIds, favoriteTeams, belledMatchIds]);
 
   const handleSkip = (e: React.MouseEvent, id: string) => {
@@ -161,7 +163,6 @@ export function LiveMatchIsland() {
     showReminderValue = activeReminder.diff <= winBefore && activeReminder.diff >= -winAfter;
   }
 
-  // GLASS NUMBERS: White gradient Fill (135deg) vs Reverse White gradient Stroke (315deg)
   const GlassNumber = ({ text, size = '3rem', id, subtext }: { text: string, size?: string, id: string, subtext?: string }) => (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
       <svg className="w-full h-full overflow-visible" viewBox="0 0 200 60">
@@ -199,7 +200,6 @@ export function LiveMatchIsland() {
 
   return (
     <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-4 pointer-events-none gpu-smooth">
-      {/* Reminders/Prayer Island */}
       {activeReminder && (
         <div className="pointer-events-auto group relative cursor-pointer" onClick={() => setActiveReminderIndex((p) => (p + 1) % prayerIslandQueue.length)}>
           <div className={cn(
@@ -222,7 +222,7 @@ export function LiveMatchIsland() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <span className="font-black text-white tracking-tight truncate leading-tight text-lg">{activeReminder.name}</span>
-                    <span className="font-black text-white/40 uppercase tracking-widest leading-none" style={{ fontSize: '1rem', bottom: '-11px', position: 'relative' }}>{activeReminder.label}</span>
+                    <span className="font-black text-white/40 uppercase tracking-widest absolute" style={{ fontSize: '1rem', bottom: '-11px' }}>{activeReminder.label}</span>
                   </div>
                 )}
               </div>
@@ -231,7 +231,6 @@ export function LiveMatchIsland() {
         </div>
       )}
 
-      {/* Football/Match Island */}
       {activeItem ? (
         <div className="pointer-events-auto group relative" onClick={() => setIsDetailedManually(!isDetailedManually)}>
           <div className={cn(
@@ -244,7 +243,6 @@ export function LiveMatchIsland() {
               {!isMatchExpanded ? (
                 <div className="h-full w-full flex items-center justify-center relative overflow-hidden p-0">
                   <div className="absolute inset-0 flex items-center justify-between opacity-100 px-2" style={{ background: 'linear-gradient(0deg, black 5%, transparent)' }}>
-                    {/* SCALED LOGOS AT 1.5 ONLY IN ISLAND VIEW */}
                     <img src={activeItem.data.homeLogo} className="h-full w-auto object-contain scale-[1.5] translate-x-4" alt="" />
                     <img src={activeItem.data.awayLogo} className="h-full w-auto object-contain scale-[1.5] -translate-x-4" alt="" />
                   </div>
@@ -271,7 +269,6 @@ export function LiveMatchIsland() {
                     <span className="text-[10px] font-black text-white/40 uppercase tracking-tighter truncate max-w-[180px] dir-rtl">{activeItem.data.league}</span>
                   </div>
                   <div className="flex items-center justify-between flex-1 px-10 gap-6">
-                    {/* NORMAL SCALE LOGOS IN LARGE VIEW (h-16) */}
                     <img src={activeItem.data.homeLogo} className="h-16 w-16 object-contain drop-shadow-2xl" alt="" />
                     <div className="w-48 h-20">
                       <GlassNumber text={activeItem.data.status === 'upcoming' ? 'VS' : `${activeItem.data.score.home}-${activeItem.data.score.away}`} size="4rem" id={`match-full-${activeItem.id}`} />
