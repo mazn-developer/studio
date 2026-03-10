@@ -23,6 +23,7 @@ export function LiveMatchIsland() {
   const { favoriteTeams, prayerTimes, belledMatchIds, showIslands, skippedMatchIds, reminders } = useMediaStore();
   const [topMatches, setTopMatches] = useState<Match[]>([]);
   const [now, setNow] = useState(new Date());
+  const [manualReminderExpand, setManualReminderExpand] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -119,14 +120,15 @@ export function LiveMatchIsland() {
       if (isFavA && !isFavB) return -1;
       if (!isFavA && isFavB) return 1;
       return 0;
-    }).slice(0, 4);
+    });
   }, [topMatches, skippedMatchIds, favoriteTeams, belledMatchIds]);
 
   if (!showIslands || (processedMatches.length === 0 && processedReminders.length === 0)) return null;
 
   const mainMatch = processedMatches[0];
-  const miniMatches = processedMatches.slice(1, 4);
-  const isReminderExpanded = processedReminders.some(r => r.isWithinWindow);
+  const miniMatches = processedMatches.slice(1, 4); // SHOW TOP 3 MINI ISLANDS
+  const isReminderAutoExpanded = processedReminders.some(r => r.isWithinWindow);
+  const isReminderExpanded = isReminderAutoExpanded || manualReminderExpand;
   const FirstReminderIcon = processedReminders.length > 0 ? processedReminders[0].icon : null;
 
   const GlassNumber = ({ text, size = '3rem', id, subtext }: { text: string, size?: string, id: string, subtext?: string }) => (
@@ -168,10 +170,13 @@ export function LiveMatchIsland() {
     <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[10001] flex items-center gap-4 pointer-events-none gpu-smooth dir-rtl">
       {/* 1. REMINDERS ISLAND (ON THE RIGHT in RTL) */}
       {processedReminders.length > 0 && (
-        <div className={cn(
-          "pointer-events-auto transition-all duration-700 liquid-glass backdrop-blur-[120px] rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,1)] border border-white/10 relative overflow-hidden",
-          isReminderExpanded ? "w-[24rem] h-[4.5rem]" : "w-[3.5rem] h-[3.5rem] flex items-center justify-center rounded-full"
-        )}>
+        <div 
+          onClick={() => setManualReminderExpand(!manualReminderExpand)}
+          className={cn(
+            "pointer-events-auto transition-all duration-700 liquid-glass backdrop-blur-[120px] rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,1)] border border-white/10 relative overflow-hidden cursor-pointer",
+            isReminderExpanded ? "w-[24rem] h-[4.5rem]" : "w-[3.5rem] h-[3.5rem] flex items-center justify-center rounded-full"
+          )}
+        >
           <FluidGlass />
           <div className="relative z-10 h-full w-full px-4 flex items-center justify-between gap-4">
             {!isReminderExpanded ? (
@@ -180,16 +185,22 @@ export function LiveMatchIsland() {
               </div>
             ) : (
               <div className="flex-1 flex items-center justify-around gap-2">
-                {processedReminders.map((rem) => (
-                  <div key={rem.id} className="flex flex-col items-center justify-center min-w-[100px] h-full">
-                    <GlassNumber 
-                      text={`${rem.diff >= 0 ? "-" : "+"}${formatCountdown(rem.diff)}`} 
-                      id={`rem-grid-${rem.id}`} 
-                      subtext={rem.name}
-                      size="2.5rem"
-                    />
-                  </div>
-                ))}
+                {processedReminders.map((rem) => {
+                  const RemIcon = rem.icon;
+                  return (
+                    <div key={rem.id} className="flex flex-col items-center justify-center min-w-[100px] h-full relative">
+                      <div className="absolute top-1 flex items-center gap-1 opacity-40">
+                        <RemIcon className={cn("w-2.5 h-2.5", rem.color)} />
+                      </div>
+                      <GlassNumber 
+                        text={`${rem.diff >= 0 ? "-" : "+"}${formatCountdown(rem.diff)}`} 
+                        id={`rem-grid-${rem.id}`} 
+                        subtext={rem.name}
+                        size="2.5rem"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -222,15 +233,29 @@ export function LiveMatchIsland() {
             </div>
           </div>
 
-          {/* Mini Matches Icons (Left Cluster) */}
+          {/* Mini Matches Cluster (Left Cluster) */}
           <div className="flex gap-2 mr-2">
             {miniMatches.map((m) => (
-              <div key={m.id} className="pointer-events-auto liquid-glass backdrop-blur-3xl rounded-full w-12 h-12 border border-white/10 flex items-center justify-center shadow-2xl relative overflow-hidden">
+              <div key={m.id} className="pointer-events-auto liquid-glass backdrop-blur-3xl rounded-full w-14 h-14 border border-white/10 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden">
                 <FluidGlass />
-                <div className="relative z-10 w-full h-full flex items-center justify-center scale-[0.5]">
-                  <img src={m.homeLogo} className="absolute left-0 w-10 h-10 object-contain scale-[1.5] translate-x-[-4px]" alt="" />
-                  <img src={m.awayLogo} className="absolute right-0 w-10 h-10 object-contain scale-[1.5] translate-x-[4px]" alt="" />
+                
+                {/* TOP OVERLAY: Score or Time */}
+                <span className="absolute top-1 z-20 text-[0.55rem] font-black text-white/90 tabular-nums drop-shadow-md">
+                  {m.status === 'upcoming' ? m.startTime : `${m.score?.away}-${m.score?.home}`}
+                </span>
+
+                {/* LOGOS: Reduced scale slightly (1.2x) */}
+                <div className="relative z-10 w-full h-full flex items-center justify-center scale-[0.45]">
+                  <img src={m.homeLogo} className="absolute left-0 w-10 h-10 object-contain scale-[1.2] translate-x-[-4px]" alt="" />
+                  <img src={m.awayLogo} className="absolute right-0 w-10 h-10 object-contain scale-[1.2] translate-x-[4px]" alt="" />
                 </div>
+
+                {/* BOTTOM OVERLAY: Live Minute */}
+                {m.status === 'live' && (
+                  <span className="absolute bottom-1 z-20 text-[0.55rem] font-black text-red-500 animate-pulse drop-shadow-md">
+                    {m.minute}'
+                  </span>
+                )}
               </div>
             ))}
           </div>
