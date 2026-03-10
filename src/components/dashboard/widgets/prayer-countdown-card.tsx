@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { convertTo12Hour } from "@/lib/constants";
-import { Timer, Clock, BellRing, Sparkles } from "lucide-react";
+import { Timer, Clock, BellRing } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMediaStore } from "@/lib/store";
 
@@ -98,12 +98,12 @@ export function PrayerCountdownCard() {
         <svg className="w-full h-full overflow-visible drop-shadow-[0_10px_40px_rgba(0,0,0,0.9)]" viewBox="0 0 300 80">
           <defs>
             <linearGradient id="timerFill" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="rgba(255,255,255,0.8)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0.1)" />
+              <stop offset="0%" stopColor="rgba(255,255,255,0.85)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0.15)" />
             </linearGradient>
             <linearGradient id="timerStroke" x1="100%" y1="100%" x2="0%" y2="0%">
               <stop offset="0%" stopColor="rgba(255,255,255,1)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0.1)" />
             </linearGradient>
           </defs>
           <text 

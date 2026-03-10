@@ -140,7 +140,6 @@ export function LiveMatchIsland() {
       
       if (priority > 0) items.push({ id: m.id, type: 'match', priority, data: m });
     });
-    // LIMIT TO 3 MATCH ISLANDS
     return items.sort((a, b) => b.priority - a.priority).slice(0, 3);
   }, [topMatches, skippedMatchIds, favoriteTeams, belledMatchIds]);
 
@@ -220,7 +219,7 @@ export function LiveMatchIsland() {
                     subtext={activeReminder.name} 
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
+                  <div className="flex flex-col items-center justify-center h-full text-center relative">
                     <span className="font-black text-white tracking-tight truncate leading-tight text-lg">{activeReminder.name}</span>
                     <span className="font-black text-white/40 uppercase tracking-widest absolute" style={{ fontSize: '1rem', bottom: '-11px' }}>{activeReminder.label}</span>
                   </div>

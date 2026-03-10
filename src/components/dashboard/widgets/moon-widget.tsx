@@ -68,18 +68,17 @@ export function MoonWidget() {
             </div>
           ) : (
             <div className="relative w-32 h-32 mx-auto">
-              {/* Dynamic SVG Number Style */}
               <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none transition-all duration-1000"
                    style={{ transform: cycleIndex === 0 ? 'scale(3.5)' : 'scale(2.2)' }}>
                 <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100">
                   <defs>
                     <linearGradient id="moonFill" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="rgba(255,255,255,0.8)" />
-                      <stop offset="100%" stopColor="rgba(255,255,255,0.1)" />
+                      <stop offset="0%" stopColor="rgba(255,255,255,0.85)" />
+                      <stop offset="100%" stopColor="rgba(255,255,255,0.15)" />
                     </linearGradient>
                     <linearGradient id="moonStroke" x1="100%" y1="100%" x2="0%" y2="0%">
                       <stop offset="0%" stopColor="rgba(255,255,255,1)" />
-                      <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                      <stop offset="100%" stopColor="rgba(255,255,255,0.1)" />
                     </linearGradient>
                   </defs>
                   <text 

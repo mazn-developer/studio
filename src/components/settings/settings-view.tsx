@@ -6,13 +6,8 @@ import { useMediaStore, Reminder } from "@/lib/store";
 import { 
   Settings, 
   Bell, 
-  Trophy, 
   Trash2, 
-  Plus, 
-  Search, 
-  Palette,
-  Edit2,
-  Clock
+  Edit2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

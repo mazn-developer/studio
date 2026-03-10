@@ -383,6 +383,12 @@ if (typeof window !== "undefined") {
         if (Array.isArray(data.record)) useMediaStore.setState({ reminders: data.record });
       }
 
+      const savedRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_SAVED_VIDEOS_BIN_ID}/latest`, { headers: { 'X-Master-Key': JSONBIN_MASTER_KEY } });
+      if (savedRes.ok) { 
+        const data = await savedRes.json(); 
+        if (data.record && Array.isArray(data.record)) useMediaStore.setState({ savedVideos: data.record }); 
+      }
+
       const iptvRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_IPTV_FAVS_BIN_ID}/latest`, { headers: { 'X-Master-Key': JSONBIN_MASTER_KEY } });
       if (iptvRes.ok) { 
         const data = await iptvRes.json(); 
