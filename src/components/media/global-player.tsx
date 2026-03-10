@@ -38,6 +38,17 @@ export function GlobalVideoPlayer() {
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Focus Guard: Repels clicks/focus from external popups by re-claiming focus
+  useEffect(() => {
+    const handleBlur = () => {
+      if (isFullScreen && !isMinimized) {
+        setTimeout(() => window.focus(), 100);
+      }
+    };
+    window.addEventListener('blur', handleBlur);
+    return () => window.removeEventListener('blur', handleBlur);
+  }, [isFullScreen, isMinimized]);
+
   useEffect(() => {
     setMounted(true);
     if (!(window as any).YT) {
@@ -113,7 +124,7 @@ export function GlobalVideoPlayer() {
       "fixed z-[9999] transition-all duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)] shadow-2xl overflow-hidden",
       isMinimized ? "bottom-12 left-1/2 -translate-x-1/2 w-[500px] h-28 rounded-[2.5rem] liquid-glass" : 
       isFullScreen ? "inset-0 w-full h-full bg-black rounded-0" : "bottom-8 right-4 w-[50vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95"
-    )} style={{ transform: 'translate3d(0,0,0)', willChange: 'transform', contain: 'layout paint' }}>
+    )} style={{ transform: 'translate3d(0,0,0)', willChange: 'transform', contain: 'strict' }}>
       
       <div className={cn("absolute inset-0 transition-opacity duration-700", isMinimized ? "opacity-0" : "opacity-100")} style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
         {activeVideo ? <div key={activeVideo.id} ref={containerRef} className="w-full h-full" style={{ background: '#000' }} /> : 
