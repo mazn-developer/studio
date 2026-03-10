@@ -22,7 +22,7 @@ interface ReminderItem {
 }
 
 export function LiveMatchIsland() {
-  const { favoriteTeams, prayerTimes, belledMatchIds, showIslands, skippedMatchIds, reminders } = useMediaStore();
+  const { favoriteTeams, prayerTimes, belledMatchIds, showIslands, skippedMatchIds, reminders, skipMatch } = useMediaStore();
   const [topMatches, setTopMatches] = useState<Match[]>([]);
   const [now, setNow] = useState(new Date());
   const [manualReminderExpand, setManualReminderExpand] = useState(false);
@@ -209,7 +209,6 @@ export function LiveMatchIsland() {
               <div className="flex flex-col w-full h-full justify-around">
                 {processedReminders.map((rem) => {
                   const RemIcon = rem.icon;
-                  // Logique: SI diff < 20 min -> Countdown, SINON -> Target Time
                   const showCountdown = Math.abs(rem.diff) <= 1200;
                   const displayVal = showCountdown 
                     ? `${rem.diff >= 0 ? "-" : "+"}${formatCountdown(rem.diff)}` 
@@ -243,8 +242,17 @@ export function LiveMatchIsland() {
       {mainMatch && (
         <div className="flex items-center gap-2">
           {/* Main Match Capsule */}
-          <div className="pointer-events-auto liquid-glass backdrop-blur-[120px] rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,1)] w-[18rem] h-[3.5rem] overflow-hidden relative border border-white/10">
+          <div className="pointer-events-auto liquid-glass backdrop-blur-[120px] rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,1)] w-[18rem] h-[3.5rem] overflow-hidden relative border border-white/10 group">
             <FluidGlass />
+            
+            {/* Dismiss Button */}
+            <button 
+              onClick={(e) => { e.stopPropagation(); skipMatch(mainMatch.id); }}
+              className="absolute top-1 left-1 z-[100] w-6 h-6 rounded-full bg-black/40 text-white/40 hover:text-white flex items-center justify-center pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+
             <div className="relative z-10 h-full w-full flex items-center justify-center relative overflow-hidden">
               <div className="absolute inset-0 flex items-center justify-between px-2" style={{ background: 'linear-gradient(0deg, black 5%, transparent)' }}>
                 <img src={mainMatch.homeLogo} className="h-full w-auto object-contain scale-[1.5] translate-x-4" alt="" />
@@ -271,10 +279,18 @@ export function LiveMatchIsland() {
               <div 
                 key={m.id} 
                 onClick={() => setOverrideMatchId(m.id)}
-                className="pointer-events-auto liquid-glass backdrop-blur-3xl rounded-full w-14 h-14 border border-white/10 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden cursor-pointer active:scale-90 transition-transform"
+                className="pointer-events-auto group liquid-glass backdrop-blur-3xl rounded-full w-14 h-14 border border-white/10 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden cursor-pointer active:scale-90 transition-transform"
               >
                 <FluidGlass />
                 
+                {/* Dismiss Button Mini */}
+                <button 
+                  onClick={(e) => { e.stopPropagation(); skipMatch(m.id); }}
+                  className="absolute -top-1 -left-1 z-[100] w-5 h-5 rounded-full bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto shadow-lg"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+
                 {/* Data TOP: Score or Time */}
                 <span className="absolute top-1 z-20 text-[0.55rem] font-black text-white/90 tabular-nums drop-shadow-md">
                   {m.status === 'upcoming' ? m.startTime : `${m.score?.home}-${m.score?.away}`}

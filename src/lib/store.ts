@@ -366,7 +366,7 @@ if (typeof window !== "undefined") {
       const state = useMediaStore.getState();
       await state.fetchPrayerTimes();
 
-      const chRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_CHANNELS_BIN_ID}/latest`, { headers: { 'X-Access-Key': JSONBIN_MASTER_KEY } });
+      const chRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_CHANNELS_BIN_ID}/latest`, { headers: { 'X-Master-Key': JSONBIN_MASTER_KEY } });
       if (chRes.ok) { const data = await chRes.json(); useMediaStore.setState({ favoriteChannels: data.record }); }
 
       const clRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_CLUBS_BIN_ID}/latest`, { headers: { 'X-Master-Key': JSONBIN_MASTER_KEY } });
