@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -27,7 +26,7 @@ const YouTubeSavedWidget = dynamic(() => import("./widgets/youtube-saved-widget"
 });
 
 export function DashboardView() {
-  const { favoriteChannels, activeVideo, savedVideos } = useMediaStore();
+  const { favoriteChannels, activeVideo } = useMediaStore();
   const starredChannels = favoriteChannels.filter(c => c.starred);
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
@@ -70,12 +69,12 @@ export function DashboardView() {
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[380px]">
         {/* Left: Interactive Map - LOADED FIRST */}
-        <div className="md:col-span-4 glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl h-full focusable" tabIndex={0} data-nav-id="map-widget-container">
+        <div className="md:col-span-4 rounded-[2.5rem] overflow-hidden relative shadow-2xl h-full focusable" tabIndex={0} data-nav-id="map-widget-container">
           <MapWidget />
         </div>
 
         {/* Middle: Vehicle Visualizer OR Reminder Summary (Width > 1080px) */}
-        <div className="md:col-span-4 glass-panel rounded-[2.5rem] relative flex items-center justify-center overflow-hidden h-full shadow-2xl focusable" tabIndex={0} data-nav-id="car-visualizer-container">
+        <div className="md:col-span-4 rounded-[2.5rem] relative flex items-center justify-center overflow-hidden h-full shadow-2xl focusable" tabIndex={0} data-nav-id="car-visualizer-container">
           {showReminderInsteadOfCar ? (
             <ReminderSummaryWidget />
           ) : (
@@ -129,13 +128,13 @@ export function DashboardView() {
             </div>
           </div>
 
-          <div className="flex-1 glass-panel rounded-[2.5rem] relative overflow-hidden shadow-2xl focusable max-h-[160px]" tabIndex={0} data-nav-id="clock-widget-container">
+          <div className="flex-1 rounded-[2.5rem] relative overflow-hidden shadow-2xl focusable max-h-[160px]" tabIndex={0} data-nav-id="clock-widget-container">
             <DateAndClockWidget />
           </div>
         </div>
       </div>
 
-      <div className="w-full glass-panel rounded-[2.5rem] p-4 shadow-xl focusable" tabIndex={0} data-nav-id="prayer-timeline-section">
+      <div className="w-full p-0 shadow-xl focusable" tabIndex={0} data-nav-id="prayer-timeline-section">
         <PrayerTimelineWidget />
       </div>
 

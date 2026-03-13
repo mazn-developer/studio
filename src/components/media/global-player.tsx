@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMediaStore } from "@/lib/store";
@@ -9,9 +8,12 @@ import Image from "next/image";
 import { fetchChannelDetails } from "@/lib/youtube";
 
 /**
- * GlobalVideoPlayer - Stable Version with GPU Isolation and Hardware Acceleration.
- * Quality Strategy: Force 360p/240p/144p to save GPU/Bandwidth.
- * Security: Re-enabled sandbox for IPTV safety.
+ * GlobalVideoPlayer - Adaptive Quality Engine v6.0
+ * Strategy: 
+ * - Minimized (Capsule): 144p (tiny)
+ * - Windowed (Popup): 240p (small)
+ * - Cinema (Full Screen): 360p (medium)
+ * Explicitly forces quality and disables 'auto'.
  */
 export function GlobalVideoPlayer() {
   const { 
@@ -64,6 +66,21 @@ export function GlobalVideoPlayer() {
     return null;
   }, [activeVideo, activeIptv?.url]);
 
+  // QUALITY ADAPTATION LOGIC - EXPLICIT CONTROL
+  useEffect(() => {
+    if (!playerRef.current || typeof playerRef.current.setPlaybackQuality !== 'function') return;
+
+    let targetQuality = 'small'; // Default 240p (Popup)
+    if (isMinimized) targetQuality = 'tiny'; // 144p (Capsule)
+    else if (isFullScreen) targetQuality = 'medium'; // 360p (Cinema)
+
+    try {
+      playerRef.current.setPlaybackQuality(targetQuality);
+    } catch (e) {
+      console.warn("Quality Switch Ignored:", e);
+    }
+  }, [isMinimized, isFullScreen, isPlaying]);
+
   useEffect(() => {
     if (activeVideo?.channelId) {
       fetchChannelDetails(activeVideo.channelId).then(details => {
@@ -88,10 +105,10 @@ export function GlobalVideoPlayer() {
     if (event.data === YT.PlayerState.PLAYING) {
       setIsPlaying(true);
       
-      // Quality Enforcement Strategy
-      // Best effort to set low quality to save GPU
+      // Force quality on start to abandon 'auto'
       if (playerRef.current && playerRef.current.setPlaybackQuality) {
-        playerRef.current.setPlaybackQuality('medium'); // 360p
+        const target = isMinimized ? 'tiny' : (isFullScreen ? 'medium' : 'small');
+        playerRef.current.setPlaybackQuality(target);
       }
 
       if (progressInterval.current) clearInterval(progressInterval.current);
@@ -106,23 +123,28 @@ export function GlobalVideoPlayer() {
     } else if (event.data === YT.PlayerState.ENDED) {
       nextTrack();
     }
-  }, [setIsPlaying, nextTrack, updateVideoProgress]);
+  }, [setIsPlaying, nextTrack, updateVideoProgress, isMinimized, isFullScreen]);
 
   const initPlayer = useCallback((videoId: string) => {
     if (!containerRef.current || !mounted) return;
     const startSecs = Math.floor(videoProgress[videoId] || 0);
+    
     if (playerRef.current && lastIdRef.current === videoId && typeof playerRef.current.loadVideoById === 'function') {
       return;
     }
+
+    const initialQuality = isMinimized ? 'tiny' : (isFullScreen ? 'medium' : 'small');
+
     if (playerRef.current && typeof playerRef.current.loadVideoById === 'function') {
       lastIdRef.current = videoId;
       playerRef.current.loadVideoById({ 
         videoId, 
         startSeconds: startSecs,
-        suggestedQuality: 'medium' // Force 360p
+        suggestedQuality: initialQuality
       });
       return;
     }
+
     lastIdRef.current = videoId;
     containerRef.current.innerHTML = '<div id="yt-stable-element"></div>';
     const YT = (window as any).YT;
@@ -139,17 +161,24 @@ export function GlobalVideoPlayer() {
         enablejsapi: 1,
         origin: window.location.origin,
         start: startSecs,
-        vq: 'medium' // Legacy hint for 360p
+        vq: initialQuality // Force initial quality
       },
       events: {
         onReady: (e: any) => {
-          e.target.setPlaybackQuality('medium');
+          e.target.setPlaybackQuality(initialQuality);
           e.target.playVideo();
         },
-        onStateChange: onPlayerStateChange
+        onStateChange: onPlayerStateChange,
+        onPlaybackQualityChange: (e: any) => {
+          // Prevent auto-engine from changing back to auto
+          const target = isMinimized ? 'tiny' : (isFullScreen ? 'medium' : 'small');
+          if (e.data !== target) {
+            e.target.setPlaybackQuality(target);
+          }
+        }
       }
     });
-  }, [mounted, onPlayerStateChange, videoProgress]);
+  }, [mounted, onPlayerStateChange, videoProgress, isMinimized, isFullScreen]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -188,17 +217,18 @@ export function GlobalVideoPlayer() {
   return (
     <div 
       className={cn(
-        "fixed z-[9999] shadow-2xl overflow-hidden",
-        isMinimized ? "bottom-12 left-1/2 -translate-x-1/2 w-[500px] h-28 rounded-[2.5rem] liquid-glass" : 
-        isFullScreen ? "inset-0 w-full h-full bg-black rounded-0" : "bottom-8 right-4 w-[50vw] h-[55vh] glass-panel rounded-[3.5rem] bg-black/95"
+        "fixed z-[9999] shadow-2xl overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]",
+        isMinimized ? "bottom-12 left-1/2 -translate-x-1/2 w-[500px] h-28 rounded-[2.5rem] premium-glass" : 
+        isFullScreen ? "inset-0 w-full h-full bg-black rounded-0" : "bottom-8 right-4 w-[50vw] h-[55vh] premium-glass rounded-[3.5rem] bg-black/95"
       )} 
       style={{ 
         transform: 'translate3d(0,0,0)', 
         contain: 'layout paint',
-        backfaceVisibility: 'hidden'
+        backfaceVisibility: 'hidden',
+        willChange: 'transform, width, height'
       }}
     >
-      <div className={cn("absolute inset-0", isMinimized ? "opacity-0" : "opacity-100")} style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
+      <div className={cn("absolute inset-0 transition-opacity duration-500", isMinimized ? "opacity-0 pointer-events-none" : "opacity-100")} style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}>
         {currentYouTubeId ? (
           <div ref={containerRef} className="w-full h-full bg-black" />
         ) : (
@@ -215,14 +245,17 @@ export function GlobalVideoPlayer() {
       </div>
 
       {isMinimized && (
-        <div className="h-full flex items-center justify-between px-8 relative z-10" onClick={() => setIsFullScreen(true)}>
+        <div className="h-full flex items-center justify-between px-8 relative z-10 cursor-pointer" onClick={() => setIsFullScreen(true)}>
           <div className="flex items-center gap-4 flex-1 min-w-0 text-right">
             <div className="relative w-16 h-16 rounded-full overflow-hidden border border-white/10 bg-zinc-900 shadow-xl">
               <Image src={displayImage} alt="" fill className="object-cover" />
             </div>
             <div className="flex flex-col">
               <h4 className="text-base font-black text-white truncate max-w-[200px]">{activeVideo?.title || activeIptv?.name}</h4>
-              <span className="text-[9px] text-accent font-black uppercase">Active Stream</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] text-accent font-black uppercase tracking-widest">144p Optimized</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+              </div>
             </div>
           </div>
           <div className="flex gap-3">
@@ -233,21 +266,21 @@ export function GlobalVideoPlayer() {
                 else playerRef.current.playVideo();
               }
               setIsPlaying(!isPlaying); 
-            }} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
+            }} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10 focusable">
               {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
             </button>
-            <button onClick={(e) => { e.stopPropagation(); setActiveVideo(null); setActiveIptv(null); }} className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center"><X className="w-5 h-5" /></button>
+            <button onClick={(e) => { e.stopPropagation(); setActiveVideo(null); setActiveIptv(null); }} className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center focusable"><X className="w-5 h-5" /></button>
           </div>
         </div>
       )}
 
       {!isMinimized && (
         <div className={cn(
-          "fixed z-[5200] flex items-center",
+          "fixed z-[5200] flex items-center transition-all duration-500",
           isFullScreen ? "left-10 bottom-10 scale-150 origin-bottom-left" : "right-12 bottom-12 scale-90"
         )} style={{ transform: 'translate3d(0,0,0)' }}>
           <div className={cn(
-            "flex items-center liquid-glass p-2 rounded-full border border-white/20 shadow-2xl overflow-hidden backdrop-blur-3xl",
+            "flex items-center premium-glass p-2 rounded-full border border-white/20 shadow-2xl overflow-hidden backdrop-blur-3xl transition-all duration-500",
             isControlsExpanded ? "gap-2 px-3" : "w-16 h-16 justify-center"
           )}>
             {!isControlsExpanded ? (

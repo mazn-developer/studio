@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -11,6 +10,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { fetchFootballData } from "@/lib/football-api";
+import { convertTo12Hour } from "@/lib/constants";
 
 export function MatchScheduleWidget() {
   const { favoriteTeams, toggleFavoriteTeam, belledMatchIds, toggleBelledMatch } = useMediaStore();
@@ -132,7 +132,7 @@ export function MatchScheduleWidget() {
                           "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-md",
                           match.status === 'live' ? "bg-red-600 text-white animate-pulse" : "bg-white/10 text-white/60 border border-white/5"
                         )}>
-                          {match.status === 'live' ? 'مباشر' : match.status === 'upcoming' ? match.startTime : 'FT'}
+                          {match.status === 'live' ? 'مباشر' : match.status === 'upcoming' ? convertTo12Hour(match.startTime) : 'FT'}
                         </div>
                       </div>
 
@@ -158,7 +158,8 @@ export function MatchScheduleWidget() {
 
                         <div className="flex flex-col items-center justify-center min-w-[60px]">
                           <div className="text-2xl font-black text-white tracking-tighter drop-shadow-lg">
-                            {match.status === 'upcoming' ? 'VS' : `${match.score?.home}-${match.score?.away}`}
+                            {/* RTL FIX: Flip score display to match logo positions */}
+                            {match.status === 'upcoming' ? convertTo12Hour(match.startTime) : `${match.score?.away}-${match.score?.home}`}
                           </div>
                           {match.status === 'live' && (
                             <span className="text-[10px] font-black text-primary animate-pulse">{match.minute}'</span>

@@ -1,13 +1,12 @@
-
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Match } from "@/lib/football-data";
 import { fetchFootballData } from "@/lib/football-api";
 import { useMediaStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Bell, Timer, Clock, X } from "lucide-react";
-import { FluidGlass } from "@/components/ui/fluid-glass";
+import { convertTo12Hour } from "@/lib/constants";
 
 interface ReminderItem {
   id: string;
@@ -20,17 +19,31 @@ interface ReminderItem {
   targetTimeStr: string;
 }
 
-/**
- * LiveMatchIsland - Optimized version with zero animations and fixed mini-island scores.
- */
+interface GoalEvent {
+  matchId: string;
+  teamName: string;
+  teamLogo: string;
+  isHome: boolean;
+}
+
 export function LiveMatchIsland() {
-  const { favoriteTeams, prayerTimes, belledMatchIds, showIslands, skippedMatchIds, reminders, skipMatch } = useMediaStore();
+  const favoriteTeams = useMediaStore(state => state.favoriteTeams);
+  const prayerTimes = useMediaStore(state => state.prayerTimes);
+  const belledMatchIds = useMediaStore(state => state.belledMatchIds);
+  const showIslands = useMediaStore(state => state.showIslands);
+  const skippedMatchIds = useMediaStore(state => state.skippedMatchIds);
+  const reminders = useMediaStore(state => state.reminders);
+  const skipMatch = useMediaStore(state => state.skipMatch);
+
   const [topMatches, setTopMatches] = useState<Match[]>([]);
   const [now, setNow] = useState(new Date());
   const [manualReminderExpand, setManualReminderExpand] = useState(false);
   const [overrideMatchId, setOverrideMatchId] = useState<string | null>(null);
   const [windowWidth, setWindowWidth] = useState(0);
   const [lastAutoTriggeredId, setLastAutoTriggeredId] = useState<string | null>(null);
+  
+  const [activeGoal, setActiveGoal] = useState<GoalEvent | null>(null);
+  const prevScoresRef = useRef<Record<string, { home: number, away: number }>>({});
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -46,9 +59,33 @@ export function LiveMatchIsland() {
   const fetchMatches = useCallback(async () => {
     try {
       const matches = await fetchFootballData('today');
+      
+      if (matches && matches.length > 0) {
+        for (const match of matches) {
+          const prev = prevScoresRef.current[match.id];
+          const isFavoriteMatch = favoriteTeams.some(t => t.id === match.homeTeamId || t.id === match.awayTeamId) || belledMatchIds.includes(match.id);
+          
+          if (prev && match.score && isFavoriteMatch) {
+            if (match.score.home > prev.home) {
+              triggerGoal({ matchId: match.id, teamName: match.homeTeam, teamLogo: match.homeLogo, isHome: true });
+            } else if (match.score.away > prev.away) {
+              triggerGoal({ matchId: match.id, teamName: match.awayTeam, teamLogo: match.awayLogo, isHome: false });
+            }
+          }
+          if (match.score) {
+            prevScoresRef.current[match.id] = { home: match.score.home, away: match.score.away };
+          }
+        }
+      }
+      
       setTopMatches(matches || []);
     } catch (e) {}
-  }, []);
+  }, [favoriteTeams, belledMatchIds]);
+
+  const triggerGoal = (event: GoalEvent) => {
+    setActiveGoal(event);
+    setTimeout(() => setActiveGoal(null), 8000); 
+  };
 
   useEffect(() => {
     fetchMatches();
@@ -76,7 +113,7 @@ export function LiveMatchIsland() {
     const formatTargetTime = (seconds: number) => {
       const h = Math.floor(seconds / 3600) % 24;
       const m = Math.floor((seconds % 3600) / 60);
-      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      return convertTo12Hour(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
     };
 
     if (prayerTimes?.length) {
@@ -94,16 +131,20 @@ export function LiveMatchIsland() {
       for (const p of prayers) {
         if (p.id === 'sunrise') {
           const riseSecs = tToM(p.time) * 60;
-          const diff = riseSecs - totalCurrentSecs;
-          if (diff > -600) list.push({ id: `azan-${p.id}`, name: p.name, label: "شروق الشمس", diff, icon: Clock, color: "text-orange-400", isWithinWindow: Math.abs(diff) < 1200, targetTimeStr: p.time });
+          let diff = riseSecs - totalCurrentSecs;
+          if (diff < -43200) diff += 86400; 
+          if (diff > -600) list.push({ id: `azan-${p.id}`, name: p.name, label: "شروق الشمس", diff, icon: Clock, color: "text-orange-400", isWithinWindow: Math.abs(diff) < 1200, targetTimeStr: convertTo12Hour(p.time) });
           continue;
         }
         const azanSecs = tToM(p.time) * 60;
         const iqamahSecs = azanSecs + (p.iqamah * 60);
-        const aDiff = azanSecs - totalCurrentSecs;
-        const iDiff = iqamahSecs - totalCurrentSecs;
+        let aDiff = azanSecs - totalCurrentSecs;
+        let iDiff = iqamahSecs - totalCurrentSecs;
         
-        if (aDiff > -600) list.push({ id: `azan-${p.id}`, name: p.name, label: "الأذان", diff: aDiff, icon: Clock, color: "text-accent", isWithinWindow: Math.abs(aDiff) < 1200, targetTimeStr: p.time });
+        if (aDiff < -43200) aDiff += 86400;
+        if (iDiff < -43200) iDiff += 86400;
+        
+        if (aDiff > -600) list.push({ id: `azan-${p.id}`, name: p.name, label: "الأذان", diff: aDiff, icon: Clock, color: "text-accent", isWithinWindow: Math.abs(aDiff) < 1200, targetTimeStr: convertTo12Hour(p.time) });
         if (iDiff > -600) list.push({ id: `iqamah-${p.id}`, name: `إقامة ${p.name}`, label: "الإقامة", diff: iDiff, icon: Timer, color: "text-emerald-400", isWithinWindow: Math.abs(iDiff) < 1200, targetTimeStr: formatTargetTime(iqamahSecs) });
       }
     }
@@ -117,7 +158,9 @@ export function LiveMatchIsland() {
         if (refTime) targetSecs = (tToM(refTime) + rem.offsetMinutes) * 60;
       }
       if (targetSecs > 0) {
-        const diff = targetSecs - totalCurrentSecs;
+        let diff = targetSecs - totalCurrentSecs;
+        if (diff < -43200) diff += 86400; 
+        
         const window = diff >= 0 ? rem.countdownWindow * 60 : rem.countupWindow * 60;
         if (diff > -600) list.push({ id: rem.id, name: rem.label, label: "تذكير", diff, icon: Bell, color: rem.color || "text-blue-400", isWithinWindow: Math.abs(diff) < window, targetTimeStr: formatTargetTime(targetSecs) });
       }
@@ -205,19 +248,17 @@ export function LiveMatchIsland() {
         contain: 'layout paint'
       }}
     >
-      {/* Reminder Island (Right) */}
-      {closestRem && (
+      {closestRem && !activeGoal && (
         <div 
           onClick={() => setManualReminderExpand(!manualReminderExpand)}
           className={cn(
-            "pointer-events-auto liquid-glass shadow-[0_40px_100px_rgba(0,0,0,1)] border border-white/10 relative overflow-hidden cursor-pointer",
+            "pointer-events-auto shadow-[0_40px_100px_rgba(0,0,0,1)] relative overflow-hidden cursor-pointer premium-glass",
             (manualReminderExpand && windowWidth <= 1080) 
-              ? "w-[18rem] h-[3.5rem] rounded-[2.5rem] bg-zinc-950/80 backdrop-blur-[120px]" 
-              : "w-[3.5rem] h-[3.5rem] flex items-center justify-center rounded-full bg-black/40 backdrop-blur-3xl"
+              ? "w-[18rem] h-[3.5rem] rounded-[2.5rem]" 
+              : "w-[3.5rem] h-[3.5rem] flex items-center justify-center rounded-full"
           )}
           style={{ transform: 'translate3d(0,0,0)' }}
         >
-          <FluidGlass />
           <div className="relative z-10 h-full w-full flex flex-col items-center py-2 px-2">
             {!manualReminderExpand || windowWidth > 1080 ? (
               <div className={cn("w-9 h-9 rounded-full flex items-center justify-center bg-white/10 my-auto relative", closestRem.color)}>
@@ -251,20 +292,37 @@ export function LiveMatchIsland() {
         </div>
       )}
 
-      {/* Match Cluster (Left) */}
-      {mainMatch && (
+      {activeGoal && (
+        <div className="pointer-events-auto bg-zinc-950/90 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,136,255,0.5)] w-[38rem] h-[3.5rem] overflow-hidden relative border border-primary/40 flex items-center px-6 gap-6 animate-in fade-in zoom-in-95 duration-500 premium-glass">
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <img src={activeGoal.teamLogo} className="w-10 h-10 object-contain animate-goal-logo" alt="" />
+            <span className="text-xl font-black text-white uppercase tracking-tighter">{activeGoal.teamName}</span>
+          </div>
+          <div className="flex-1 h-full flex items-center justify-center overflow-hidden">
+            <span className="text-4xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-primary via-white to-primary animate-goal-text uppercase">
+              GOAAALLLLLLLL!
+            </span>
+          </div>
+          <div className="bg-primary/20 px-4 py-1 rounded-full border border-primary/40">
+            <span className="text-xs font-black text-primary uppercase tracking-[0.2em]">Goal Alert</span>
+          </div>
+        </div>
+      )}
+
+      {!activeGoal && mainMatch && (
         <div className="flex items-center gap-2" style={{ transform: 'translate3d(0,0,0)' }}>
-          <div className="pointer-events-auto liquid-glass backdrop-blur-[120px] rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,1)] w-[18rem] h-[3.5rem] overflow-hidden relative border border-white/10 group">
-            <FluidGlass />
+          <div className="pointer-events-auto rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,1)] w-[18rem] h-[3.5rem] overflow-hidden relative group premium-glass" style={{ transform: 'translate3d(0,0,0)' }}>
             <button onClick={(e) => { e.stopPropagation(); skipMatch(mainMatch.id); }} className="absolute top-1 left-1 z-[100] w-6 h-6 rounded-full bg-black/40 text-white/40 hover:text-white flex items-center justify-center opacity-0 group-hover:opacity-100"><X className="w-3.5 h-3.5" /></button>
             <div className="relative z-10 h-full w-full flex items-center justify-center relative overflow-hidden">
               <div className="absolute inset-0 flex items-center justify-between px-2" style={{ background: 'linear-gradient(0deg, black 5%, transparent)' }}>
+                {/* Home on Right, Away on Left for RTL */}
                 <img src={mainMatch.homeLogo} className="h-full w-auto object-contain scale-[1.5] translate-x-4" alt="" />
                 <img src={mainMatch.awayLogo} className="h-full w-auto object-contain scale-[1.5] -translate-x-4" alt="" />
               </div>
               <div className="relative w-full h-full z-20 flex flex-col items-center justify-center" style={{ background: 'linear-gradient(-1deg, black, transparent)' }}>
                 <GlassNumber 
-                  text={mainMatch.status === 'upcoming' ? mainMatch.startTime : `${mainMatch.score?.away}-${mainMatch.score?.home}`} 
+                  /* RTL FIX: Flip score display to match logo positions (Home Score on Right, Away Score on Left) */
+                  text={mainMatch.status === 'upcoming' ? convertTo12Hour(mainMatch.startTime) : `${mainMatch.score?.away}-${mainMatch.score?.home}`} 
                   id={`match-main-${mainMatch.id}`} 
                   subtext={mainMatch.league} 
                 />
@@ -279,16 +337,15 @@ export function LiveMatchIsland() {
 
           <div className="flex gap-2 mr-2">
             {miniMatches.map((m) => (
-              <div key={m.id} onClick={() => setOverrideMatchId(m.id)} className="pointer-events-auto group liquid-glass backdrop-blur-3xl rounded-full w-14 h-14 border border-white/10 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden cursor-pointer active:scale-95" style={{ transform: 'translate3d(0,0,0)' }}>
-                <FluidGlass />
+              <div key={m.id} onClick={() => setOverrideMatchId(m.id)} className="pointer-events-auto group rounded-full w-14 h-14 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden cursor-pointer active:scale-95 premium-glass" style={{ transform: 'translate3d(0,0,0)' }}>
                 <button onClick={(e) => { e.stopPropagation(); skipMatch(m.id); }} className="absolute -top-1 -left-1 z-[100] w-5 h-5 rounded-full bg-red-600/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 shadow-lg"><X className="w-3.5 h-3.5" /></button>
                 <span className="absolute top-1 z-20 text-[0.5rem] font-black text-white/90 tabular-nums drop-shadow-md">
-                  {/* FIXED SCORE ORDER IN MINI-ISLAND: HOME-AWAY to fix inversion reported by user */}
-                  {m.status === 'upcoming' ? m.startTime : `${m.score?.home}-${m.score?.away}`}
+                  {/* RTL FIX: Flip score display for consistency */}
+                  {m.status === 'upcoming' ? convertTo12Hour(m.startTime) : `${m.score?.away}-${m.score?.home}`}
                 </span>
                 <div className="relative z-10 w-full h-full flex items-center justify-center scale-[0.35]">
-                  <img src={m.homeLogo} className="absolute left-0 w-10 h-10 object-contain scale-[1.2] translate-x-[-2px]" alt="" />
-                  <img src={m.awayLogo} className="absolute right-0 w-10 h-10 object-contain scale-[1.2] translate-x(2px)" alt="" />
+                  <img src={m.homeLogo} className="absolute right-0 w-10 h-10 object-contain scale-[1.2] translate-x[2px]" alt="" />
+                  <img src={m.awayLogo} className="absolute left-0 w-10 h-10 object-contain scale-[1.2] translate-x-[-2px]" alt="" />
                 </div>
                 {m.status === 'live' && (
                   <span className="absolute bottom-1 z-20 text-[0.55rem] font-black text-red-500 drop-shadow-md">{m.minute}'</span>

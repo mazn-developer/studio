@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useEffect, useState } from "react";
@@ -9,7 +8,7 @@ import { useMediaStore } from "@/lib/store";
 
 export function PrayerTimelineWidget() {
   const [now, setNow] = useState<Date | null>(null);
-  const { prayerTimes } = useMediaStore();
+  const prayerTimes = useMediaStore(state => state.prayerTimes);
 
   useEffect(() => {
     setNow(new Date());
@@ -20,9 +19,10 @@ export function PrayerTimelineWidget() {
   const { prayers, activeIndex } = useMemo(() => {
     if (!now || !prayerTimes || prayerTimes.length === 0) return { prayers: [], activeIndex: -1 };
     
-    const day = now.getDate().toString().padStart(2, '0');
-    const dateStr = `2026-02-${day}`;
-    const data = prayerTimes.find(p => p.date === dateStr) || prayerTimes[0];
+    const dateStr = now.toISOString().split('T')[0];
+    const data = prayerTimes.find(p => p.date === dateStr) || 
+                 prayerTimes.find(p => p.date.endsWith(`-${now.getDate().toString().padStart(2, '0')}`)) || 
+                 prayerTimes[0];
     
     const list = [
       { name: "الفجر", time: data.fajr, iqamah: 25 },
@@ -39,23 +39,20 @@ export function PrayerTimelineWidget() {
       return h * 60 + m;
     };
 
-    // logic: Next index should only move if currentMinutes > (currentAzan + iqamah + 20 mins grace)
     let idx = list.findIndex(p => timeToMinutes(p.time) > currentMinutes);
     if (idx === -1) idx = 0;
 
-    // Check if we are in the "grace period" of the PREVIOUS prayer (20 mins after iqamah)
     const prevIdx = idx === 0 ? list.length - 1 : idx - 1;
     const prevPrayer = list[prevIdx];
     const prevAzanMins = timeToMinutes(prevPrayer.time);
     const graceTime = prevAzanMins + prevPrayer.iqamah + 20;
 
     let finalIndex = idx;
-    // If we are still within the grace period of the previous prayer, keep it highlighted
     if (currentMinutes < graceTime && currentMinutes >= prevAzanMins) {
       finalIndex = prevIdx;
     }
 
-    const processed = list.map((p, idx) => {
+    const processed = list.map((p) => {
       const azanMins = timeToMinutes(p.time);
       const iqamahH = Math.floor((azanMins + p.iqamah) / 60);
       const iqamahM = (azanMins + p.iqamah) % 60;
@@ -71,7 +68,7 @@ export function PrayerTimelineWidget() {
   if (!now || prayers.length === 0) return null;
 
   return (
-    <div className="w-full flex items-center justify-between px-6 py-2 overflow-x-auto no-scrollbar prayer-timeline-item focusable" tabIndex={0}>
+    <div className="w-full flex items-center justify-between px-6 py-4 overflow-x-auto no-scrollbar rounded-[2.5rem] transition-all duration-700 premium-glass">
       <div className="flex items-center gap-10 flex-1 justify-around">
         {prayers.map((prayer, idx) => {
           const isActive = idx === activeIndex;
@@ -98,7 +95,7 @@ export function PrayerTimelineWidget() {
                   "text-xl font-black tracking-tighter relative z-10 tabular-nums",
                   isActive ? "text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.9)]" : "text-white/40"
                 )}>
-                  {convertTo12Hour(prayer.time).replace(/\s?[AP]M/i, '')}
+                  {convertTo12Hour(prayer.time)}
                 </span>
               </div>
 
@@ -109,7 +106,7 @@ export function PrayerTimelineWidget() {
                     <span className="text-[11px] font-black text-accent uppercase tracking-[0.3em] drop-shadow-[0_0_15px_rgba(65,184,131,0.7)]">الإقامة</span>
                   </div>
                   <span className="text-3xl font-black text-accent drop-shadow-[0_0_30px_rgba(16,185,129,1)] mt-1 tabular-nums">
-                    {convertTo12Hour(prayer.iqamahTime).replace(/\s?[AP]M/i, '')}
+                    {convertTo12Hour(prayer.iqamahTime)}
                   </span>
                 </div>
               )}

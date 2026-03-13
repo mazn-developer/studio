@@ -20,7 +20,7 @@ export const JSONBIN_SAVED_VIDEOS_BIN_ID = '68e4ac2e43b1c97be95d24af';
 export const JSONBIN_PRAYER_TIMES_BIN_ID = '69a00f6eae596e708f4b7291';
 export const JSONBIN_RECITERS_BIN_ID = '6909c1cd43b1c97be997b522';
 export const JSONBIN_IPTV_FAVS_BIN_ID = '69a87b8bd0ea881f40eeec0c';
-export const JSONBIN_REMINDERS_BIN_ID = '6909c1cd43b1c97be997b522'; // Updated for Reminders storage
+export const JSONBIN_REMINDERS_BIN_ID = '6909c1cd43b1c97be997b522';
 export const JSONBIN_ACCESS_KEY_CHANNELS = '$2a$10$J8o3WrPtnqmKAd///uDw6.BOWnGIBekHFOImbeEZZwsJ/h/XPbVUy';
 
 export const SURAHS_LIST = [
@@ -32,7 +32,7 @@ export const SURAHS_LIST = [
   "الذاريات", "الطور", "النجم", "القمر", "الرحمن", "الواقعة", "الحديد", "المجادلة", "الحشر", "الممتحنة",
   "الصف", "الجمعة", "المنافقون", "التغابن", "الطلاق", "التحريم", "الملك", "القلم", "الحاقة", "المعارج",
   "نوح", "الجن", "المزمل", "المدثر", "القيامة", "الإنسان", "المرسلات", "النبأ", "النازعات", "عبس",
-  "التكوير", "الانفطار", "المطففين", "الانشقاق", "البروج", "الطارق", "الأعلى", "الغاشية", "الفجر", "البلد",
+  "التكوير", "الانفطار", "النشقاق", "المطففين", "البروج", "الطارق", "الأعلى", "الغاشية", "الفجر", "البلد",
   "الشمس", "الليل", "الضحى", "الشرح", "التين", "العلق", "القدر", "البينة", "الزلزلة", "العاديات",
   "القارعة", "التكاثر", "العصر", "الهمزة", "الفيل", "قريش", "الماعون", "الكوثر", "الكافرون", "النصر",
   "المسد", "الإخلاص", "الفلق", "الناس"
@@ -70,18 +70,16 @@ export const prayerTimesData = [
 
 export function convertTo12Hour(time24h: string | undefined): string {
     if (!time24h || typeof time24h !== 'string' || time24h === '--:--') {
-        return time24h || '--:--';
+        return '--:--';
     }
     const parts = time24h.split(':');
     if (parts.length < 2) return time24h;
     
-    const hours24 = parseInt(parts[0], 10);
-    const minutes = parseInt(parts[1], 10);
+    let hours24 = parseInt(parts[0], 10);
+    const minutes = parts[1];
     
-    if (isNaN(hours24) || isNaN(minutes)) return time24h;
-
     let hours12 = hours24 % 12;
     hours12 = hours12 ? hours12 : 12;
-    const ampm = hours24 >= 12 ? 'PM' : 'AM';
-    return `${hours12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    
+    return `${hours12}:${minutes}`;
 }

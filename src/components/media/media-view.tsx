@@ -32,7 +32,7 @@ const PRIORITY_LIVE_CHANNELS = [
   { id: "UCeylkpIn8ZnuZ_Z9_Id_vVQ", name: "الإخبارية السعودية مباشر", type: "live" },
   { id: "UCZ_id_east_news", name: "الشرق للأخبار مباشر", type: "live" },
   { id: "UCJUCcJUeh0Cz2xyKwkw5Q1w", name: "beIN Sports مباشر", type: "live" },
-  { id: "UC_mbc_group", name: "MBC مباشر", type: "live" },
+  { id: "UC_abu_dhabi_tv", name: "أبوظبي مباشر", type: "live" },
   { id: "UCX_me_almashhad", name: "المشهد مباشر", type: "live" },
   { id: "UC_dubai_tv", name: "تلفزيون دبي مباشر", type: "live" },
   { id: "UC_rotana_kh", name: "روتانا خليجية مباشر", type: "live" },

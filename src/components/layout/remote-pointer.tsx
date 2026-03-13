@@ -1,14 +1,17 @@
+
 "use client";
 
 import { useEffect, useCallback, useState } from "react";
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
+import { useMediaStore } from "@/lib/store";
 
 export function RemotePointer() {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const pathname = usePathname();
+  const { activeIptv, nextIptvChannel, prevIptvChannel } = useMediaStore();
 
   const navigate = useCallback((direction: string) => {
     const focusables = Array.from(document.querySelectorAll(".focusable")) as HTMLElement[];
@@ -20,7 +23,6 @@ export function RemotePointer() {
     if (!isCurrentFocusable || !direction) {
       let target: HTMLElement | null = null;
       if (pathname === '/') {
-        // PRIORITY FOCUS: MOON WIDGET
         target = document.querySelector('[data-nav-id="moon-widget-container"]') as HTMLElement || focusables.find(el => !el.dataset.navId?.startsWith('dock-')) || focusables[0];
       } else if (pathname === '/media') {
         target = document.querySelector('[data-nav-id^="fav-channel-"]') as HTMLElement || focusables[0];
@@ -81,15 +83,8 @@ export function RemotePointer() {
   }, [pathname]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      navigate(''); 
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [pathname, navigate]);
-
-  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // STOP REMOTE COMMANDS IF FOCUSING INPUT
+      // CRITICAL: Stop remote commands if focusing input
       const isInputFocused = document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA';
       if (isInputFocused) return;
 
@@ -101,6 +96,23 @@ export function RemotePointer() {
       if (standardMap[e.key]) {
         e.preventDefault();
         const dir = standardMap[e.key];
+        
+        // SMART IPTV MAPPING: Flip channels if IPTV active
+        if (activeIptv && (dir === "ArrowLeft" || dir === "ArrowRight")) {
+          const current = document.activeElement as HTMLElement;
+          const isNavigatingGrid = current?.classList.contains('iptv-channel-item') || current?.classList.contains('iptv-cat-item');
+          
+          if (!isNavigatingGrid) {
+            if (dir === "ArrowLeft") prevIptvChannel();
+            else nextIptvChannel();
+            
+            setActiveKey(e.key === "ArrowLeft" ? "4" : "6");
+            setIsVisible(true);
+            setTimeout(() => setIsVisible(false), 500);
+            return;
+          }
+        }
+
         navigate(dir);
         
         let visualKey = e.key;
@@ -124,7 +136,7 @@ export function RemotePointer() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [navigate]);
+  }, [navigate, activeIptv, nextIptvChannel, prevIptvChannel]);
 
   return (
     <div className={cn(

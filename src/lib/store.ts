@@ -19,12 +19,12 @@ export interface Reminder {
   id: string;
   label: string;
   relativePrayer: 'fajr' | 'sunrise' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' | 'manual';
-  manualTime?: string; // HH:mm format
-  offsetMinutes: number; // Minutes from prayer time
+  manualTime?: string; 
+  offsetMinutes: number; 
   showCountdown: boolean;
-  countdownWindow: number; // Minutes before target
+  countdownWindow: number; 
   showCountup: boolean;
-  countupWindow: number; // Minutes after target
+  countupWindow: number; 
   completed: boolean;
   color: string;
   iconType: 'play' | 'bell' | 'circle';
@@ -89,6 +89,7 @@ interface MediaState {
   removeReminder: (id: string) => void;
   toggleReminder: (id: string) => void;
   toggleFavoriteTeam: (team: FavoriteTeam) => void;
+  toggleFavoriteLeague: (leagueId: number) => void;
   toggleBelledMatch: (matchId: string) => void;
   skipMatch: (matchId: string) => void;
   toggleFavoriteIptvChannel: (channel: IptvChannel) => void;
@@ -227,15 +228,23 @@ export const useMediaStore = create<MediaState>()(
         set((state) => {
           const exists = state.favoriteTeams.some(t => t.id === team.id);
           const newTeams = exists ? state.favoriteTeams.filter(t => t.id !== team.id) : [...state.favoriteTeams, team];
-          updateBin(JSONBIN_CLUBS_BIN_ID, { teams: newTeams, matches: state.belledMatchIds, skipped: state.skippedMatchIds });
+          updateBin(JSONBIN_CLUBS_BIN_ID, { teams: newTeams, leagues: state.favoriteLeagueIds, matches: state.belledMatchIds, skipped: state.skippedMatchIds });
           return { favoriteTeams: newTeams };
+        });
+      },
+
+      toggleFavoriteLeague: (leagueId) => {
+        set((state) => {
+          const newLeagues = state.favoriteLeagueIds.includes(leagueId) ? state.favoriteLeagueIds.filter(id => id !== leagueId) : [...state.favoriteLeagueIds, leagueId];
+          updateBin(JSONBIN_CLUBS_BIN_ID, { teams: state.favoriteTeams, leagues: newLeagues, matches: state.belledMatchIds, skipped: state.skippedMatchIds });
+          return { favoriteLeagueIds: newLeagues };
         });
       },
 
       toggleBelledMatch: (matchId) => {
         set((state) => {
           const newMatches = state.belledMatchIds.includes(matchId) ? state.belledMatchIds.filter(id => id !== matchId) : [...state.belledMatchIds, matchId];
-          updateBin(JSONBIN_CLUBS_BIN_ID, { teams: state.favoriteTeams, matches: newMatches, skipped: state.skippedMatchIds });
+          updateBin(JSONBIN_CLUBS_BIN_ID, { teams: state.favoriteTeams, leagues: state.favoriteLeagueIds, matches: newMatches, skipped: state.skippedMatchIds });
           return { belledMatchIds: newMatches };
         });
       },
@@ -243,7 +252,7 @@ export const useMediaStore = create<MediaState>()(
       skipMatch: (matchId) => {
         set((state) => {
           const newSkipped = Array.from(new Set([...state.skippedMatchIds, matchId]));
-          updateBin(JSONBIN_CLUBS_BIN_ID, { teams: state.favoriteTeams, matches: state.belledMatchIds, skipped: newSkipped });
+          updateBin(JSONBIN_CLUBS_BIN_ID, { teams: state.favoriteTeams, leagues: state.favoriteLeagueIds, matches: state.belledMatchIds, skipped: newSkipped });
           return { skippedMatchIds: newSkipped };
         });
       },
@@ -373,6 +382,7 @@ if (typeof window !== "undefined") {
       if (clRes.ok) { 
         const data = await clRes.json();
         if (data.record.teams) useMediaStore.setState({ favoriteTeams: data.record.teams });
+        if (data.record.leagues) useMediaStore.setState({ favoriteLeagueIds: data.record.leagues });
         if (data.record.matches) useMediaStore.setState({ belledMatchIds: data.record.matches });
         if (data.record.skipped) useMediaStore.setState({ skippedMatchIds: data.record.skipped });
       }

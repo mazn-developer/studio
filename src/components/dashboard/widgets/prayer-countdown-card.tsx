@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -10,7 +9,7 @@ import { useMediaStore } from "@/lib/store";
 export function PrayerCountdownCard() {
   const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
-  const { prayerTimes } = useMediaStore();
+  const prayerTimes = useMediaStore(state => state.prayerTimes);
   
   useEffect(() => {
     setMounted(true);
@@ -29,9 +28,10 @@ export function PrayerCountdownCard() {
     };
     
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const day = now.getDate().toString().padStart(2, '0');
-    const dateStr = `2026-02-${day}`;
-    const pTimes = prayerTimes.find(p => p.date === dateStr) || prayerTimes[0];
+    const dateStr = now.toISOString().split('T')[0];
+    const pTimes = prayerTimes.find(p => p.date === dateStr) || 
+                   prayerTimes.find(p => p.date.endsWith(`-${now.getDate().toString().padStart(2, '0')}`)) || 
+                   prayerTimes[0];
     
     const prayers = [
       { name: "الفجر", time: pTimes.fajr, iqamah: 25 },
@@ -81,8 +81,8 @@ export function PrayerCountdownCard() {
 
   return (
     <div className={cn(
-      "h-full w-full glass-panel rounded-[2.5rem] p-4 flex flex-col justify-center items-center text-center transition-all duration-1000 relative overflow-hidden shadow-2xl",
-      isIqamah ? "bg-accent/25 border-accent/90" : "bg-white/5 border-white/10"
+      "h-full w-full rounded-[2.5rem] p-4 flex flex-col justify-center items-center text-center transition-all duration-1000 relative overflow-hidden premium-glass",
+      isIqamah && "ring-2 ring-accent shadow-[0_0_40px_rgba(65,184,131,0.3)]"
     )}>
       <div className="flex items-center gap-2 mb-1 relative z-10">
         <div className={cn(
@@ -97,7 +97,7 @@ export function PrayerCountdownCard() {
       <div className="relative z-10 w-full h-24 flex items-center justify-center">
         <svg className="w-full h-full overflow-visible drop-shadow-[0_10px_40px_rgba(0,0,0,0.9)]" viewBox="0 0 300 80">
           <defs>
-            <linearGradient id="timerFill" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id="timerFill" x1="0%" x2="100%" y1="0%" y2="100%">
               <stop offset="0%" stopColor="rgba(255,255,255,0.85)" />
               <stop offset="100%" stopColor="rgba(255,255,255,0.15)" />
             </linearGradient>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
@@ -6,6 +5,7 @@ import { useMediaStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Bell, Timer, Clock } from "lucide-react";
 import { FluidGlass } from "@/components/ui/fluid-glass";
+import { convertTo12Hour } from "@/lib/constants";
 
 interface ReminderItem {
   id: string;
@@ -17,11 +17,6 @@ interface ReminderItem {
   targetTimeStr: string;
 }
 
-/**
- * ReminderSummaryWidget - Displays the top 3 closest events in a vertical stack.
- * Used in Dashboard when screen width > 1080px.
- * Features: Dark Glass, Vivid labels, and Glass Numbers.
- */
 export function ReminderSummaryWidget() {
   const { prayerTimes, reminders } = useMediaStore();
   const [now, setNow] = useState(new Date());
@@ -44,12 +39,15 @@ export function ReminderSummaryWidget() {
     const formatTargetTime = (seconds: number) => {
       const h = Math.floor(seconds / 3600) % 24;
       const m = Math.floor((seconds % 3600) / 60);
-      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      return convertTo12Hour(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
     };
 
     if (prayerTimes?.length) {
-      const day = now.getDate().toString().padStart(2, '0');
-      const pData = prayerTimes.find(p => p.date.endsWith(`-${day}`)) || prayerTimes[0];
+      const dateStr = now.toISOString().split('T')[0];
+      const pData = prayerTimes.find(p => p.date === dateStr) || 
+                    prayerTimes.find(p => p.date.endsWith(`-${now.getDate().toString().padStart(2, '0')}`)) || 
+                    prayerTimes[0];
+      
       const prayers = [
         { id: 'fajr', name: "الفجر", time: pData.fajr, iqamah: 25 },
         { id: 'sunrise', name: "الشروق", time: pData.sunrise, iqamah: 0 },
@@ -62,16 +60,20 @@ export function ReminderSummaryWidget() {
       for (const p of prayers) {
         if (p.id === 'sunrise') {
           const riseSecs = tToM(p.time) * 60;
-          const diff = riseSecs - totalCurrentSecs;
-          if (diff > -600) list.push({ id: `azan-${p.id}`, name: p.name, label: "شروق الشمس", diff, icon: Clock, color: "text-orange-400", targetTimeStr: p.time });
+          let diff = riseSecs - totalCurrentSecs;
+          if (diff < -43200) diff += 86400;
+          if (diff > -600) list.push({ id: `azan-${p.id}`, name: p.name, label: "شروق الشمس", diff, icon: Clock, color: "text-orange-400", targetTimeStr: convertTo12Hour(p.time) });
           continue;
         }
         const azanSecs = tToM(p.time) * 60;
         const iqamahSecs = azanSecs + (p.iqamah * 60);
-        const aDiff = azanSecs - totalCurrentSecs;
-        const iDiff = iqamahSecs - totalCurrentSecs;
+        let aDiff = azanSecs - totalCurrentSecs;
+        let iDiff = iqamahSecs - totalCurrentSecs;
         
-        if (aDiff > -600) list.push({ id: `azan-${p.id}`, name: p.name, label: "الأذان", diff: aDiff, icon: Clock, color: "text-accent", targetTimeStr: p.time });
+        if (aDiff < -43200) aDiff += 86400;
+        if (iDiff < -43200) iDiff += 86400;
+        
+        if (aDiff > -600) list.push({ id: `azan-${p.id}`, name: p.name, label: "الأذان", diff: aDiff, icon: Clock, color: "text-accent", targetTimeStr: convertTo12Hour(p.time) });
         if (iDiff > -600) list.push({ id: `iqamah-${p.id}`, name: `إقامة ${p.name}`, label: "الإقامة", diff: iDiff, icon: Timer, color: "text-emerald-400", targetTimeStr: formatTargetTime(iqamahSecs) });
       }
     }
@@ -79,13 +81,16 @@ export function ReminderSummaryWidget() {
     for (const rem of reminders) {
       let targetSecs = rem.relativePrayer === 'manual' && rem.manualTime ? tToM(rem.manualTime) * 60 : 0;
       if (rem.relativePrayer !== 'manual' && prayerTimes?.length) {
-        const day = now.getDate().toString().padStart(2, '0');
-        const pData = prayerTimes.find(p => p.date.endsWith(`-${day}`)) || prayerTimes[0];
+        const dateStr = now.toISOString().split('T')[0];
+        const pData = prayerTimes.find(p => p.date === dateStr) || 
+                      prayerTimes.find(p => p.date.endsWith(`-${now.getDate().toString().padStart(2, '0')}`)) || 
+                      prayerTimes[0];
         const refTime = pData[rem.relativePrayer as keyof typeof pData];
         if (refTime) targetSecs = (tToM(refTime) + rem.offsetMinutes) * 60;
       }
       if (targetSecs > 0) {
-        const diff = targetSecs - totalCurrentSecs;
+        let diff = targetSecs - totalCurrentSecs;
+        if (diff < -43200) diff += 86400;
         if (diff > -600) list.push({ id: rem.id, name: rem.label, label: "تذكير", diff, icon: Bell, color: rem.color || "text-blue-400", targetTimeStr: formatTargetTime(targetSecs) });
       }
     }
@@ -135,7 +140,7 @@ export function ReminderSummaryWidget() {
       <FluidGlass />
       {processedReminders.map((rem) => {
         const RemIcon = rem.icon;
-        const showCountdown = Math.abs(rem.diff) <= 1200; // 20 mins rule
+        const showCountdown = Math.abs(rem.diff) <= 1200;
         const displayVal = showCountdown 
           ? `${rem.diff >= 0 ? "-" : "+"}${formatCountdown(rem.diff)}` 
           : rem.targetTimeStr;
