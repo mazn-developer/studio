@@ -2,25 +2,49 @@
 "use client";
 
 import { useMediaStore, Manuscript } from "@/lib/store";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Sun, Moon, Stars, BookOpen, Sparkles } from "lucide-react";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 
 export function ActiveAzkarWidget() {
   const [now, setNow] = useState(new Date());
   const prayerTimes = useMediaStore(state => state.prayerTimes);
   const customManuscripts = useMediaStore(state => state.customManuscripts);
+  const setWallPlate = useMediaStore(state => state.setWallPlate);
   const [phraseIndex, setPhraseIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, direction: 'rtl' }, [
+    Autoplay({ delay: 10000, stopOnInteraction: false, playOnInit: true })
+  ]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
-    const phraseTimer = setInterval(() => {
-      if (customManuscripts.length > 0) {
-        setPhraseIndex(p => (p + 1) % customManuscripts.length);
-      }
-    }, 10000);
-    return () => { clearInterval(timer); clearInterval(phraseTimer); };
-  }, [customManuscripts.length]);
+    return () => clearInterval(timer);
+  }, []);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setPhraseIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.on("select", onSelect);
+  }, [emblaApi, onSelect]);
+
+  const togglePause = () => {
+    if (!emblaApi) return;
+    const autoplay = emblaApi.plugins().autoplay;
+    if (isPaused) {
+      autoplay.play();
+    } else {
+      autoplay.stop();
+    }
+    setIsPaused(!isPaused);
+  };
 
   const activeAzkar = useMemo(() => {
     if (!prayerTimes || prayerTimes.length === 0) return [];
@@ -43,93 +67,93 @@ export function ActiveAzkarWidget() {
 
     const list = [];
 
-    // Morning Azkar: Fajr -> Dhuhr - 10
     if (currentMins >= fajr && currentMins < (dhuhr - 10)) {
       list.push({ id: 'morning', name: 'أذكار الصباح', icon: Sun, color: 'text-orange-400' });
     }
 
-    // Evening Azkar: Asr -> Maghrib
     if (currentMins >= asr && currentMins < maghrib) {
       list.push({ id: 'evening', name: 'أذكار المساء', icon: Moon, color: 'text-blue-400' });
     }
 
-    // Qiyam: Isha -> Fajr (Handle overnight)
     const isQiyam = currentMins >= isha || currentMins < fajr;
     if (isQiyam) {
       list.push({ id: 'qiyam', name: 'قيام الليل', icon: Stars, color: 'text-purple-400' });
     }
 
-    // Wird: Always
     list.push({ id: 'wird', name: 'الورد اليومي', icon: BookOpen, color: 'text-emerald-400' });
 
     return list;
   }, [now, prayerTimes]);
 
-  const currentManuscript = customManuscripts[phraseIndex];
-
   return (
-    <div className="h-full w-full bg-zinc-950/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 p-8 flex flex-col justify-between relative overflow-hidden group">
-      {/* Background decoration */}
+    <div className="h-full w-full bg-zinc-950/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 p-1 flex flex-col justify-between relative overflow-hidden group">
       <div className="absolute top-[-20%] right-[-20%] w-64 h-64 bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
       
-      {/* الجزء السفلي (الآن العلوي): المخطوطات والذكر الحر */}
-      <div className="relative z-10 pt-4 flex-1 flex flex-col items-center justify-center">
-        <div className="text-center space-y-6 w-full">
-          <div className="h-32 flex items-center justify-center">
-            {currentManuscript ? (
-              <div className="animate-in fade-in zoom-in-95 duration-1000">
-                {currentManuscript.type === 'text' ? (
-                  <p className="text-4xl md:text-5xl font-calligraphy text-white/90 leading-loose drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
-                    {currentManuscript.content}
-                  </p>
-                ) : (
-                  <img 
-                    src={currentManuscript.content} 
-                    alt="Manuscript"
-                    className="h-28 w-auto object-contain brightness-0 invert drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]"
-                  />
-                )}
-              </div>
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center overflow-hidden no-scrollbar">
+        <div className="w-full h-full overflow-hidden no-scrollbar" ref={emblaRef}>
+          <div className="flex h-full">
+            {customManuscripts?.length > 0 ? (
+              customManuscripts.map((item, i) => (
+                <div 
+                  key={i} 
+                  className="flex-[0_0_100%] min-w-0 h-full flex items-center justify-center cursor-pointer relative"
+                  onClick={(e) => {
+                    if (e.detail === 2) {
+                      setWallPlate('manuscript', item);
+                    } else {
+                      togglePause();
+                    }
+                  }}
+                >
+                  <div className="animate-in fade-in zoom-in-95 duration-1000 w-full flex justify-center px-0">
+                    {item.type === 'text' ? (
+                      <p className="w-full text-8xl md:text-9xl lg:text-[11.5rem] font-calligraphy text-white leading-none drop-shadow-[0_0_70px_rgba(255,255,255,0.8)] text-center tracking-wide whitespace-nowrap">
+                        {item.content}
+                      </p>
+                    ) : (
+                      <img 
+                        src={item.content} 
+                        alt="Manuscript"
+                        className="h-72 md:h-96 w-full object-contain brightness-0 invert drop-shadow-[0_0_60px_rgba(255,255,255,0.9)]"
+                      />
+                    )}
+                  </div>
+                  {isPaused && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/10 px-3 py-1 rounded-full backdrop-blur-md border border-white/5 animate-pulse">
+                      <span className="text-[10px] text-white/40 font-black uppercase tracking-widest">Paused</span>
+                    </div>
+                  )}
+                </div>
+              ))
             ) : (
-              <p className="text-white/20 font-black uppercase tracking-widest text-xs">أضف مخطوطات من الإعدادات</p>
+              <div className="flex-[0_0_100%] flex items-center justify-center opacity-20">
+                <p className="text-white font-black uppercase tracking-widest text-xs">أضف مخطوطات من الإعدادات</p>
+              </div>
             )}
-          </div>
-          <div className="flex justify-center gap-2">
-            {customManuscripts.map((_, i) => (
-              <div key={i} className={cn("h-1 rounded-full transition-all duration-500", i === phraseIndex ? "bg-primary w-8 shadow-glow" : "bg-white/10 w-1.5")} />
-            ))}
           </div>
         </div>
       </div>
 
-      {/* الجزء العلوي (الآن السفلي): قائمة الأذكار والورد النشط */}
-      <div className="mt-auto relative z-10 space-y-6 border-t border-white/5 pt-8">
+      <div className="mt-auto relative z-10 space-y-4 border-t border-white/5 p-6 bg-black/20">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <h2 className="text-xl font-black text-white/80 uppercase tracking-widest">الأذكار والورد</h2>
-            <span className="text-[10px] text-primary font-bold uppercase tracking-[0.3em]">Active Spiritual Flow</span>
+            <h2 className="text-sm font-black text-white/60 uppercase tracking-widest">الأذكار والورد</h2>
+            <div className="flex gap-1.5 mt-1.5">
+              {customManuscripts?.map((_, i) => (
+                <div key={i} className={cn("h-1 rounded-full transition-all duration-500", i === phraseIndex ? "bg-primary w-6 shadow-glow" : "bg-white/10 w-1")} />
+              ))}
+            </div>
           </div>
-          <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+          <Sparkles className="w-5 h-5 text-primary animate-pulse" />
         </div>
 
-        <div className="flex flex-col gap-4">
-          {activeAzkar.length > 0 ? (
-            activeAzkar.map(item => (
-              <div key={item.id} className="flex items-center justify-between bg-white/5 border border-white/5 p-4 rounded-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex items-center gap-4">
-                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center bg-white/5 shadow-lg", item.color)}>
-                    <item.icon className="w-6 h-6" />
-                  </div>
-                  <span className="text-lg font-black text-white/90">{item.name}</span>
-                </div>
-                <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", item.color.replace('text', 'bg'))} />
-              </div>
-            ))
-          ) : (
-            <div className="py-8 text-center opacity-20">
-              <p className="text-sm font-black uppercase tracking-widest">بانتظار الموعد التالي...</p>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          {activeAzkar.map(item => (
+            <div key={item.id} className="flex items-center gap-3 bg-white/5 border border-white/5 py-2 px-4 rounded-xl shrink-0">
+              <item.icon className={cn("w-4 h-4", item.color)} />
+              <span className="text-xs font-black text-white/80">{item.name}</span>
             </div>
-          )}
+          ))}
         </div>
       </div>
     </div>

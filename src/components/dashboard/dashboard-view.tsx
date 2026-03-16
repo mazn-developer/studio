@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,6 +15,7 @@ import { ActiveAzkarWidget } from "./widgets/active-azkar-widget";
 import { useMediaStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { Carousel, CarouselContent, CarouselItem, CarouselApi } from "@/components/ui/carousel";
+import { X } from "lucide-react";
 
 const LatestVideosWidget = dynamic(() => import("./widgets/latest-videos-widget").then(m => m.LatestVideosWidget), { 
   ssr: false,
@@ -30,9 +32,8 @@ const YouTubeSuggestionsWidget = dynamic(() => import("./widgets/youtube-suggest
 });
 
 export function DashboardView() {
-  const { favoriteChannels, activeVideo } = useMediaStore();
+  const { favoriteChannels, activeVideo, wallPlateType, wallPlateData, setWallPlate } = useMediaStore();
   
-  // FIX: Safety check for array to prevent filter is not a function
   const starredChannels = Array.isArray(favoriteChannels) 
     ? favoriteChannels.filter(c => c?.starred) 
     : [];
@@ -58,11 +59,47 @@ export function DashboardView() {
     });
   }, [api, activeVideo]);
 
-  const isWideScreen = windowWidth > 1080;
+  // Wide Screen threshold updated to 968px as requested
+  const isWideScreen = windowWidth > 968;
 
   return (
     <div className="h-full w-full p-6 flex flex-col gap-6 relative overflow-y-auto pb-32 no-scrollbar">
       <div className="h-24 shrink-0 w-full" />
+
+      {/* Wall Plate Overlay */}
+      {wallPlateType && (
+        <div 
+          className="fixed inset-0 z-[20000] bg-black flex items-center justify-center animate-in fade-in duration-700 cursor-pointer"
+          onClick={() => setWallPlate(null)}
+        >
+          <button className="absolute top-10 right-10 w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white focusable z-50">
+            <X className="w-8 h-8" />
+          </button>
+          
+          <div className="w-full h-full flex items-center justify-center p-10">
+            {wallPlateType === 'moon' && (
+              <div className="relative w-[85vh] h-[85vh] animate-in zoom-in-95 duration-1000">
+                <Image src={wallPlateData.image} alt="Moon" fill className="object-contain drop-shadow-[0_0_120px_rgba(59,130,246,0.6)]" unoptimized />
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                   <span className="text-[18rem] font-black text-white/95 drop-shadow-2xl">{wallPlateData.day}</span>
+                   <span className="text-5xl font-bold text-blue-400/90 uppercase tracking-[0.6em]">{wallPlateData.label}</span>
+                </div>
+              </div>
+            )}
+            {wallPlateType === 'manuscript' && (
+              <div className="w-full max-w-7xl animate-in zoom-in-95 duration-1000 flex items-center justify-center">
+                {wallPlateData.type === 'text' ? (
+                  <p className="text-[14rem] md:text-[22rem] font-calligraphy text-white leading-tight drop-shadow-[0_0_100px_rgba(255,255,255,0.9)] text-center px-10">
+                    {wallPlateData.content}
+                  </p>
+                ) : (
+                  <img src={wallPlateData.content} alt="Manuscript" className="max-h-[90vh] w-auto object-contain brightness-0 invert drop-shadow-[0_0_120px_rgba(255,255,255,1)]" />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[50] opacity-80 pointer-events-none">
         <Image 
@@ -101,7 +138,7 @@ export function DashboardView() {
         <div className="md:col-span-4 flex flex-col gap-6 h-full relative">
           <div className="flex-[1.8] relative overflow-hidden focusable group bg-black/20 rounded-[2.5rem] shadow-2xl" tabIndex={0} data-nav-id="moon-widget-container">
             <Carousel setApi={setApi} opts={{ loop: true }} className="w-full h-full">
-              <CarouselContent className="h-full ml-0">
+              <CarouselContent className="h-full ml-0 overflow-hidden no-scrollbar">
                 <CarouselItem className="pl-0 h-full flex items-center justify-center">
                   <MoonWidget />
                 </CarouselItem>

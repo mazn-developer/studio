@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { CardContent } from "@/components/ui/card";
 import { Moon as MoonIcon, Loader2, Cloud, Calendar } from "lucide-react";
 import Image from "next/image";
+import { useMediaStore } from "@/lib/store";
 
 interface MoonData {
   image: { url: string; };
@@ -20,6 +21,7 @@ export function MoonWidget() {
   const [hijriDay, setHijriDay] = useState("");
   const [temperature, setTemperature] = useState<string>("--");
   const [windowWidth, setWindowWidth] = useState(0);
+  const setWallPlate = useMediaStore(state => state.setWallPlate);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -44,7 +46,6 @@ export function MoonWidget() {
 
     async function fetchTemperature() {
       try {
-        // Salalah: Lat 17.01, Lon 54.09
         const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=17.01&longitude=54.09&current=temperature_2m&timezone=Asia%2FRiyadh`);
         if (res.ok) {
           const data = await res.json();
@@ -83,33 +84,34 @@ export function MoonWidget() {
 
   const gregorianDay = new Date().getDate().toString();
   const displayValue = cycleIndex === 0 ? hijriDay : cycleIndex === 1 ? gregorianDay : temperature;
-  const isWide = windowWidth > 1080;
+  const label = cycleIndex === 0 ? "اليوم الهجري" : cycleIndex === 1 ? "اليوم الميلادي" : "درجة الحرارة";
+  const isWide = windowWidth > 968;
 
   return (
-    <div className="h-full w-full bg-black/40 rounded-[2.5rem] overflow-hidden relative flex flex-col items-center justify-center p-4 shadow-2xl">
-      <CardContent className="p-0 h-full flex flex-col items-center justify-center gap-6 relative z-10 w-full text-center">
-        <div className={isWide ? "relative w-56 h-56 flex-shrink-0 mx-auto transition-all duration-1000" : "relative w-32 h-32 flex-shrink-0 mx-auto transition-all duration-1000"}>
+    <div 
+      className="h-full w-full bg-black/40 rounded-[2.5rem] overflow-hidden relative flex flex-col items-center justify-center p-1 shadow-2xl cursor-pointer"
+      onClick={() => moonData && setWallPlate('moon', { image: moonData.image.url, day: displayValue, label })}
+    >
+      <CardContent className="p-0 h-full flex flex-col items-center justify-center gap-4 relative z-10 w-full text-center">
+        <div className={isWide ? "relative w-64 h-64 flex-shrink-0 mx-auto transition-all duration-1000" : "relative w-36 h-36 flex-shrink-0 mx-auto transition-all duration-1000"}>
           {loading ? (
             <div className="w-full h-full rounded-full bg-white/5 flex items-center justify-center border border-white/10">
               <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
             </div>
           ) : (
-            <div className="relative w-full h-full mx-auto">
-              {/* Scaled Text - High Contrast Glass Effect */}
+            <div className="relative w-full h-full mx-auto group">
               <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none transition-all duration-1000"
                    style={{ 
                      transform: isWide 
-                       ? (cycleIndex === 0 ? 'scale(3.5)' : 'scale(2.2)') 
-                       : 'scale(2.8)' // 95% of card height relative to w-32 base
+                       ? (cycleIndex === 0 ? 'scale(4)' : 'scale(2.5)') 
+                       : 'scale(3.2)' 
                    }}>
                 <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100">
                   <defs>
-                    {/* Fill Gradient: Top-Right to Bottom-Left (225 degrees) */}
                     <linearGradient id="moonFill" x1="100%" y1="0%" x2="0%" y2="100%">
                       <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
                       <stop offset="100%" stopColor="rgba(255,255,255,0)" />
                     </linearGradient>
-                    {/* Stroke Gradient: Bottom-Left to Top-Right (Exactly 45 degrees) */}
                     <linearGradient id="moonStroke" x1="0%" y1="100%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor="rgba(255,255,255,1)" />
                       <stop offset="100%" stopColor="rgba(255,255,255,0)" />
@@ -130,7 +132,7 @@ export function MoonWidget() {
                   </text>
                 </svg>
               </div>
-              <div className="relative w-full h-full rounded-full overflow-hidden ring-[10px] ring-white/5 shadow-[0_0_80px_rgba(59,130,246,0.4)] bg-black">
+              <div className="relative w-full h-full rounded-full overflow-hidden ring-[10px] ring-white/5 shadow-[0_0_80px_rgba(59,130,246,0.4)] bg-black transition-transform group-hover:scale-105 duration-700">
                 {moonData?.image?.url && (
                   <Image 
                     src={moonData.image.url} 
@@ -147,15 +149,15 @@ export function MoonWidget() {
           )}
         </div>
         
-        <div className="flex flex-col items-center gap-2 w-full">
-          <div className="flex items-center gap-2 bg-white/5 px-6 py-1.5 rounded-full border border-white/10 backdrop-blur-md shadow-lg">
-            {cycleIndex === 0 ? <MoonIcon className="w-4 h-4 text-blue-400" /> : cycleIndex === 1 ? <Calendar className="w-4 h-4 text-emerald-400" /> : <Cloud className="w-4 h-4 text-orange-400" />}
-            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white/60">
+        <div className="flex flex-col items-center gap-1 w-full">
+          <div className="flex items-center gap-2 bg-white/5 px-5 py-1 rounded-full border border-white/10 backdrop-blur-md">
+            {cycleIndex === 0 ? <MoonIcon className="w-3.5 h-3.5 text-blue-400" /> : cycleIndex === 1 ? <Calendar className="w-3.5 h-3.5 text-emerald-400" /> : <Cloud className="w-3.5 h-3.5 text-orange-400" />}
+            <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/60">
               {cycleIndex === 0 ? "Hijri Hub" : cycleIndex === 1 ? "Gregorian Hub" : "Weather Hub"}
             </span>
           </div>
-          <h3 className="text-lg font-black text-white leading-none drop-shadow-2xl">
-            {cycleIndex === 0 ? "اليوم الهجري" : cycleIndex === 1 ? "اليوم الميلادي" : "درجة الحرارة"}
+          <h3 className="text-base font-black text-white leading-none drop-shadow-2xl">
+            {label}
           </h3>
         </div>
       </CardContent>
