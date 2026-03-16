@@ -89,7 +89,7 @@ export function MoonWidget() {
 
   return (
     <div 
-      className="h-full w-full bg-black/40 rounded-[2.5rem] overflow-hidden relative flex flex-col items-center justify-center p-1 shadow-2xl cursor-pointer"
+      className="h-full w-full bg-black rounded-[2.5rem] overflow-hidden relative flex flex-col items-center justify-center p-1 shadow-2xl cursor-pointer"
       onClick={() => moonData && setWallPlate('moon', { image: moonData.image.url, day: displayValue, label })}
     >
       <CardContent className="p-0 h-full flex flex-col items-center justify-center gap-4 relative z-10 w-full text-center">
@@ -132,7 +132,7 @@ export function MoonWidget() {
                   </text>
                 </svg>
               </div>
-              <div className="relative w-full h-full rounded-full overflow-hidden ring-[10px] ring-white/5 shadow-[0_0_80px_rgba(59,130,246,0.4)] bg-black transition-transform group-hover:scale-105 duration-700">
+              <div className="relative w-full h-full rounded-full overflow-hidden ring-[10px] ring-white/5 shadow-[0_0_80px_rgba(59,130,246,0.5)] bg-black transition-transform group-hover:scale-105 duration-700">
                 {moonData?.image?.url && (
                   <Image 
                     src={moonData.image.url} 

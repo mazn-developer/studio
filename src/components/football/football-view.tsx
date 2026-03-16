@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -10,7 +11,7 @@ import { fetchFootballData } from "@/lib/football-api";
 import { cn } from "@/lib/utils";
 import { convertTo12Hour } from "@/lib/constants";
 
-const MAJOR_CLUBS_IDS = [541, 529, 40, 50, 33, 42, 157, 505, 489, 496, 85, 2931, 2939, 2930, 1029, 1038];
+const MAJOR_CLUBS_IDS = [541, 529, 40, 50, 33, 42, 157, 505, 489, 496, 85, 2931, 2939, 2932, 2930, 1029, 1038];
 const MAJOR_LEAGUES_IDS = [2, 3, 39, 140, 135, 165, 61, 307, 233];
 
 export function FootballView() {
@@ -119,16 +120,16 @@ export function FootballView() {
           <div className="flex items-center justify-between gap-2">
             {/* Home Team */}
             <div className="flex flex-col items-center flex-1 gap-1 relative group/team">
-              <div className={cn("h-12 w-12 rounded-xl p-1.5 flex items-center justify-center border transition-all relative overflow-hidden", isFavTeam(match.homeTeamId) ? "bg-primary/20 border-primary shadow-glow" : "bg-white/5 border-white/5")}>
+              <div className={cn("h-12 w-12 rounded-xl p-1.5 flex items-center justify-center border transition-all relative overflow-visible", isFavTeam(match.homeTeamId) ? "bg-primary/20 border-primary shadow-glow" : "bg-white/5 border-white/5")}>
                 <img src={match.homeLogo} alt="" className="h-full w-full object-contain" />
                 <button 
                   onClick={(e) => handleToggleFav(e, match.homeTeamId, match.homeTeam, match.homeLogo)}
                   className={cn(
-                    "absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/team:opacity-100 transition-opacity",
-                    isFavTeam(match.homeTeamId) && "opacity-100 bg-transparent pointer-events-auto"
+                    "absolute -top-3 -right-3 w-6 h-6 rounded-full flex items-center justify-center shadow-xl transition-all active:scale-75 z-30",
+                    isFavTeam(match.homeTeamId) ? "bg-yellow-500 text-black opacity-100" : "bg-black/80 text-white/40 opacity-0 group-hover/team:opacity-100"
                   )}
                 >
-                  <Star className={cn("w-5 h-5", isFavTeam(match.homeTeamId) ? "text-yellow-500 fill-current shadow-glow" : "text-white/40")} />
+                  <Star className={cn("w-3.5 h-3.5", isFavTeam(match.homeTeamId) && "fill-current")} />
                 </button>
               </div>
               <span className={cn("text-[9px] font-black text-center line-clamp-1 uppercase tracking-tighter", isFavTeam(match.homeTeamId) ? "text-primary" : "text-white/80")}>
@@ -160,16 +161,16 @@ export function FootballView() {
 
             {/* Away Team */}
             <div className="flex flex-col items-center flex-1 gap-1 relative group/team">
-              <div className={cn("h-12 w-12 rounded-xl p-1.5 flex items-center justify-center border transition-all relative overflow-hidden", isFavTeam(match.awayTeamId) ? "bg-primary/20 border-primary shadow-glow" : "bg-white/5 border-white/5")}>
+              <div className={cn("h-12 w-12 rounded-xl p-1.5 flex items-center justify-center border transition-all relative overflow-visible", isFavTeam(match.awayTeamId) ? "bg-primary/20 border-primary shadow-glow" : "bg-white/5 border-white/5")}>
                 <img src={match.awayLogo} alt="" className="h-full w-full object-contain" />
                 <button 
                   onClick={(e) => handleToggleFav(e, match.awayTeamId, match.awayTeam, match.awayLogo)}
                   className={cn(
-                    "absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover/team:opacity-100 transition-opacity",
-                    isFavTeam(match.awayTeamId) && "opacity-100 bg-transparent pointer-events-auto"
+                    "absolute -top-3 -left-3 w-6 h-6 rounded-full flex items-center justify-center shadow-xl transition-all active:scale-75 z-30",
+                    isFavTeam(match.awayTeamId) ? "bg-yellow-500 text-black opacity-100" : "bg-black/80 text-white/40 opacity-0 group-hover/team:opacity-100"
                   )}
                 >
-                  <Star className={cn("w-5 h-5", isFavTeam(match.awayTeamId) ? "text-yellow-500 fill-current shadow-glow" : "text-white/40")} />
+                  <Star className={cn("w-3.5 h-3.5", isFavTeam(match.awayTeamId) && "fill-current")} />
                 </button>
               </div>
               <span className={cn("text-[9px] font-black text-center line-clamp-1 uppercase tracking-tighter", isFavTeam(match.awayTeamId) ? "text-primary" : "text-white/80")}>

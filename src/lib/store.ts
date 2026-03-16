@@ -46,6 +46,8 @@ export interface MapSettings {
   tilt: number;
   carScale: number;
   backgroundIndex: number;
+  showManuscriptBg: boolean;
+  manuscriptBgUrl: string;
 }
 
 export interface Manuscript {
@@ -186,7 +188,14 @@ export const useMediaStore = create<MediaState>()(
       prayerSettings: DEFAULT_PRAYER_SETTINGS,
       reminders: [],
       customManuscripts: [],
-      mapSettings: { zoom: 20.0, tilt: 65, carScale: 1.02, backgroundIndex: 0 },
+      mapSettings: { 
+        zoom: 20.0, 
+        tilt: 65, 
+        carScale: 1.02, 
+        backgroundIndex: 0,
+        showManuscriptBg: true,
+        manuscriptBgUrl: "https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?q=80&w=2000"
+      },
       aiSuggestions: [],
       activeVideo: null,
       activeIptv: null,
@@ -391,8 +400,9 @@ export const useMediaStore = create<MediaState>()(
       },
 
       updateMapSettings: (settings) => set((state) => {
+        const newState = { mapSettings: { ...state.mapSettings, ...settings } };
         setTimeout(() => get().syncMasterBin(), 100);
-        return { mapSettings: { ...state.mapSettings, ...settings } };
+        return newState;
       }),
       
       addReminder: (reminder) => set((state) => {
@@ -461,16 +471,18 @@ export const useMediaStore = create<MediaState>()(
       setIsFullScreen: (fullScreen) => set({ isFullScreen: fullScreen, isMinimized: false }),
       setWallPlate: (type, data) => set({ wallPlateType: type, wallPlateData: data }),
       toggleDockSide: () => set((state) => {
+        const newSide = state.dockSide === 'left' ? 'right' : 'left';
         setTimeout(() => get().syncMasterBin(), 100);
-        return { dockSide: state.dockSide === 'left' ? 'right' : 'left' };
+        return { dockSide: newSide };
       }),
       toggleShowIslands: () => set((state) => {
+        const newVal = !state.showIslands;
         setTimeout(() => get().syncMasterBin(), 100);
-        return { showIslands: !state.showIslands };
+        return { showIslands: newVal };
       }),
     }),
     {
-      name: "drivecast-master-v5",
+      name: "drivecast-master-v6",
       partialize: (state) => ({ 
         videoProgress: state.videoProgress,
         dockSide: state.dockSide,

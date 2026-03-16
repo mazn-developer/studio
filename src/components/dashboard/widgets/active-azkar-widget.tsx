@@ -86,7 +86,7 @@ export function ActiveAzkarWidget() {
   }, [now, prayerTimes]);
 
   return (
-    <div className="h-full w-full bg-zinc-950/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 p-1 flex flex-col justify-between relative overflow-hidden group">
+    <div className="h-full w-full bg-black rounded-[2.5rem] border border-white/10 p-1 flex flex-col justify-between relative overflow-hidden group">
       <div className="absolute top-[-20%] right-[-20%] w-64 h-64 bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
       
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center overflow-hidden no-scrollbar">
@@ -107,14 +107,14 @@ export function ActiveAzkarWidget() {
                 >
                   <div className="animate-in fade-in zoom-in-95 duration-1000 w-full flex justify-center px-0">
                     {item.type === 'text' ? (
-                      <p className="w-full text-8xl md:text-9xl lg:text-[11.5rem] font-calligraphy text-white leading-none drop-shadow-[0_0_70px_rgba(255,255,255,0.8)] text-center tracking-wide whitespace-nowrap">
+                      <p className="w-full text-8xl md:text-9xl lg:text-[11.5rem] font-calligraphy text-white leading-none drop-shadow-[0_0_75px_rgba(255,255,255,0.9)] text-center tracking-wide whitespace-nowrap">
                         {item.content}
                       </p>
                     ) : (
                       <img 
                         src={item.content} 
                         alt="Manuscript"
-                        className="h-72 md:h-96 w-full object-contain brightness-0 invert drop-shadow-[0_0_60px_rgba(255,255,255,0.9)]"
+                        className="h-72 md:h-96 w-full object-contain brightness-0 invert drop-shadow-[0_0_70px_rgba(255,255,255,1)]"
                       />
                     )}
                   </div>
@@ -134,7 +134,7 @@ export function ActiveAzkarWidget() {
         </div>
       </div>
 
-      <div className="mt-auto relative z-10 space-y-4 border-t border-white/5 p-6 bg-black/20">
+      <div className="mt-auto relative z-10 space-y-4 border-t border-white/5 p-6 bg-black/40">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <h2 className="text-sm font-black text-white/60 uppercase tracking-widest">الأذكار والورد</h2>

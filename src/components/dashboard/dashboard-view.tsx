@@ -32,7 +32,7 @@ const YouTubeSuggestionsWidget = dynamic(() => import("./widgets/youtube-suggest
 });
 
 export function DashboardView() {
-  const { favoriteChannels, activeVideo, wallPlateType, wallPlateData, setWallPlate } = useMediaStore();
+  const { favoriteChannels, activeVideo, wallPlateType, wallPlateData, setWallPlate, mapSettings } = useMediaStore();
   
   const starredChannels = Array.isArray(favoriteChannels) 
     ? favoriteChannels.filter(c => c?.starred) 
@@ -59,14 +59,13 @@ export function DashboardView() {
     });
   }, [api, activeVideo]);
 
-  // Wide Screen threshold updated to 968px as requested
   const isWideScreen = windowWidth > 968;
 
   return (
-    <div className="h-full w-full p-6 flex flex-col gap-6 relative overflow-y-auto pb-32 no-scrollbar">
+    <div className="h-full w-full p-6 flex flex-col gap-6 relative overflow-y-auto pb-32 no-scrollbar bg-black">
       <div className="h-24 shrink-0 w-full" />
 
-      {/* Wall Plate Overlay */}
+      {/* Wall Plate Overlay - Pure Black Pure Immersion */}
       {wallPlateType && (
         <div 
           className="fixed inset-0 z-[20000] bg-black flex items-center justify-center animate-in fade-in duration-700 cursor-pointer"
@@ -76,25 +75,46 @@ export function DashboardView() {
             <X className="w-8 h-8" />
           </button>
           
-          <div className="w-full h-full flex items-center justify-center p-10">
+          <div className="w-full h-full flex items-center justify-center overflow-hidden">
             {wallPlateType === 'moon' && (
-              <div className="relative w-[85vh] h-[85vh] animate-in zoom-in-95 duration-1000">
-                <Image src={wallPlateData.image} alt="Moon" fill className="object-contain drop-shadow-[0_0_120px_rgba(59,130,246,0.6)]" unoptimized />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                   <span className="text-[18rem] font-black text-white/95 drop-shadow-2xl">{wallPlateData.day}</span>
-                   <span className="text-5xl font-bold text-blue-400/90 uppercase tracking-[0.6em]">{wallPlateData.label}</span>
+              <div className="relative w-full h-full animate-in zoom-in-95 duration-1000 flex items-center justify-center bg-black">
+                <div className="relative h-screen w-screen flex items-center justify-center">
+                  <Image 
+                    src={wallPlateData.image} 
+                    alt="Moon" 
+                    fill 
+                    className="object-contain" 
+                    unoptimized 
+                  />
                 </div>
               </div>
             )}
             {wallPlateType === 'manuscript' && (
-              <div className="w-full max-w-7xl animate-in zoom-in-95 duration-1000 flex items-center justify-center">
-                {wallPlateData.type === 'text' ? (
-                  <p className="text-[14rem] md:text-[22rem] font-calligraphy text-white leading-tight drop-shadow-[0_0_100px_rgba(255,255,255,0.9)] text-center px-10">
-                    {wallPlateData.content}
-                  </p>
-                ) : (
-                  <img src={wallPlateData.content} alt="Manuscript" className="max-h-[90vh] w-auto object-contain brightness-0 invert drop-shadow-[0_0_120px_rgba(255,255,255,1)]" />
+              <div className="relative w-full h-full animate-in zoom-in-95 duration-1000 flex items-center justify-center px-10 bg-black">
+                {/* Artistic Background Layer */}
+                {mapSettings.showManuscriptBg && (
+                  <div className="absolute inset-0 z-0">
+                    <Image 
+                      src={mapSettings.manuscriptBgUrl} 
+                      alt="Wall Background" 
+                      fill 
+                      className="object-cover opacity-40 mix-blend-luminosity grayscale contrast-125"
+                      priority
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black via-transparent to-black" />
+                    <div className="absolute inset-0 bg-black/40" />
+                  </div>
                 )}
+                
+                <div className="relative z-10 w-full flex items-center justify-center">
+                  {wallPlateData.type === 'text' ? (
+                    <p className="w-full text-[18rem] md:text-[28rem] font-calligraphy text-white leading-none drop-shadow-[0_0_120px_rgba(255,255,255,1)] text-center whitespace-nowrap">
+                      {wallPlateData.content}
+                    </p>
+                  ) : (
+                    <img src={wallPlateData.content} alt="Manuscript" className="max-h-[90vh] w-auto object-contain brightness-0 invert drop-shadow-[0_0_150px_rgba(255,255,255,1)]" />
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -112,11 +132,11 @@ export function DashboardView() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[380px]">
-        <div className="md:col-span-4 rounded-[2.5rem] overflow-hidden relative shadow-2xl h-full focusable" tabIndex={0} data-nav-id="left-widget-container">
+        <div className="md:col-span-4 rounded-[2.5rem] overflow-hidden relative shadow-2xl h-full focusable bg-black" tabIndex={0} data-nav-id="left-widget-container">
           {isWideScreen ? <ActiveAzkarWidget /> : <MapWidget />}
         </div>
 
-        <div className="md:col-span-4 rounded-[2.5rem] relative flex items-center justify-center overflow-hidden h-full shadow-2xl focusable" tabIndex={0} data-nav-id="car-visualizer-container">
+        <div className="md:col-span-4 rounded-[2.5rem] relative flex items-center justify-center overflow-hidden h-full shadow-2xl focusable bg-black" tabIndex={0} data-nav-id="car-visualizer-container">
           {isWideScreen ? (
             <ReminderSummaryWidget />
           ) : (
@@ -136,17 +156,17 @@ export function DashboardView() {
         </div>
 
         <div className="md:col-span-4 flex flex-col gap-6 h-full relative">
-          <div className="flex-[1.8] relative overflow-hidden focusable group bg-black/20 rounded-[2.5rem] shadow-2xl" tabIndex={0} data-nav-id="moon-widget-container">
+          <div className="flex-[1.8] relative overflow-hidden focusable group bg-black rounded-[2.5rem] shadow-2xl" tabIndex={0} data-nav-id="moon-widget-container">
             <Carousel setApi={setApi} opts={{ loop: true }} className="w-full h-full">
               <CarouselContent className="h-full ml-0 overflow-hidden no-scrollbar">
-                <CarouselItem className="pl-0 h-full flex items-center justify-center">
+                <CarouselItem className="pl-0 h-full flex items-center justify-center bg-black">
                   <MoonWidget />
                 </CarouselItem>
-                <CarouselItem className="pl-0 h-full flex items-center justify-center">
+                <CarouselItem className="pl-0 h-full flex items-center justify-center bg-black">
                   <WeatherWidget />
                 </CarouselItem>
                 {activeVideo && (
-                  <CarouselItem className="pl-0 h-full flex items-center justify-center">
+                  <CarouselItem className="pl-0 h-full flex items-center justify-center bg-black">
                     <PlayingNowWidget />
                   </CarouselItem>
                 )}
@@ -168,17 +188,17 @@ export function DashboardView() {
             </div>
           </div>
 
-          <div className="flex-1 rounded-[2.5rem] relative overflow-hidden shadow-2xl focusable max-h-[160px]" tabIndex={0} data-nav-id="clock-widget-container">
+          <div className="flex-1 rounded-[2.5rem] relative overflow-hidden shadow-2xl focusable max-h-[160px] bg-black" tabIndex={0} data-nav-id="clock-widget-container">
             <DateAndClockWidget />
           </div>
         </div>
       </div>
 
-      <div className="w-full p-0 shadow-xl focusable" tabIndex={0} data-nav-id="prayer-timeline-section">
+      <div className="w-full p-0 shadow-xl focusable bg-black" tabIndex={0} data-nav-id="prayer-timeline-section">
         <PrayerTimelineWidget />
       </div>
 
-      <div className="w-full space-y-8 pb-12">
+      <div className="w-full space-y-8 pb-12 bg-black">
         <LatestVideosWidget channels={starredChannels} />
         <YouTubeSuggestionsWidget />
         <YouTubeSavedWidget />

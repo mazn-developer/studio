@@ -21,7 +21,9 @@ import {
   ChevronUp,
   Image as ImageIcon,
   Type as TypeIcon,
-  AlertTriangle
+  AlertTriangle,
+  Palette,
+  Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +49,13 @@ const BACKGROUNDS = [
   "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa",
   "https://images.unsplash.com/photo-1594911772125-07fc7a2d8d9f",
   "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0"
+];
+
+const WALL_BACKGROUNDS = [
+  { id: 'art-1', name: 'زيتي تجريدي', url: 'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?q=80&w=2000' },
+  { id: 'art-2', name: 'ألوان مائية', url: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=2000' },
+  { id: 'art-3', name: 'نسيج قماشي', url: 'https://images.unsplash.com/photo-1561214115-f2f134cc4912?q=80&w=2000' },
+  { id: 'art-4', name: 'ظلال الرخام', url: 'https://images.unsplash.com/photo-1533154683836-84ea7a0bc310?q=80&w=2000' }
 ];
 
 const RELATIVE_PRAYER_OPTIONS = [
@@ -201,6 +210,67 @@ export function SettingsView() {
               </div>
             </Card>
           </div>
+
+          <Card className="premium-glass p-10 space-y-8">
+            <div className="flex flex-col gap-2">
+              <CardTitle className="text-2xl font-black text-white flex items-center gap-3">
+                <Palette className="w-6 h-6 text-primary" />
+                خلفية حائط المخطوطة (Wall Background)
+              </CardTitle>
+              <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Customize Immersive Wall Experience</p>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              <div className="lg:col-span-4 flex flex-col gap-6">
+                <div className="flex items-center justify-between bg-white/5 p-6 rounded-2xl border border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold">تفعيل الخلفية الفنية</span>
+                    <span className="text-[10px] text-white/40">تظهر خلف المخطوطات في وضع الحائط</span>
+                  </div>
+                  <Switch 
+                    checked={mapSettings.showManuscriptBg} 
+                    onCheckedChange={(v) => updateMapSettings({ showManuscriptBg: v })} 
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <span className="text-xs font-black text-white/60 uppercase">رابط خلفية مخصص (Cloud URL)</span>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="https://..."
+                      value={mapSettings.manuscriptBgUrl}
+                      onChange={(e) => updateMapSettings({ manuscriptBgUrl: e.target.value })}
+                      className="bg-white/5 border-white/10 h-14 rounded-xl focusable flex-1 text-right"
+                    />
+                    <Button 
+                      onClick={() => updateMapSettings({ manuscriptBgUrl: mapSettings.manuscriptBgUrl })} 
+                      className="h-14 w-14 bg-primary rounded-xl"
+                    >
+                      <Upload className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+                {WALL_BACKGROUNDS.map((bg) => (
+                  <button 
+                    key={bg.id} 
+                    onClick={() => updateMapSettings({ manuscriptBgUrl: bg.url })}
+                    className={cn(
+                      "relative aspect-video rounded-xl overflow-hidden border-2 transition-all focusable",
+                      mapSettings.manuscriptBgUrl === bg.url ? "border-primary scale-105 shadow-glow" : "border-transparent opacity-40 hover:opacity-100"
+                    )}
+                  >
+                    <img src={bg.url} className="w-full h-full object-cover" alt={bg.name} />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <span className="text-[10px] font-black text-white uppercase">{bg.name}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Card>
 
           <Card className="premium-glass p-10 space-y-8">
             <div className="flex flex-col gap-2">

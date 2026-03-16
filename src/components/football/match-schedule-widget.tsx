@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -146,8 +147,8 @@ export function MatchScheduleWidget() {
                                 toggleFavoriteTeam({ id: match.homeTeamId!, name: match.homeTeam, logo: match.homeLogo }); 
                               }}
                               className={cn(
-                                "absolute -top-1 -right-1 w-7 h-7 rounded-full border border-white/10 backdrop-blur-3xl flex items-center justify-center transition-all active:scale-90 z-30",
-                                isFavTeam(match.homeTeamId!) ? "bg-yellow-500 text-black shadow-glow" : "bg-black/60 text-white/20 hover:text-white"
+                                "absolute -top-3 -right-3 w-7 h-7 rounded-full border border-white/10 backdrop-blur-3xl flex items-center justify-center transition-all active:scale-90 z-30",
+                                isFavTeam(match.homeTeamId!) ? "bg-yellow-500 text-black shadow-glow" : "bg-black/60 text-white/40 hover:text-white"
                               )}
                             >
                               <Star className={cn("w-3.5 h-3.5", isFavTeam(match.homeTeamId!) && "fill-current")} />
@@ -158,7 +159,6 @@ export function MatchScheduleWidget() {
 
                         <div className="flex flex-col items-center justify-center min-w-[60px]">
                           <div className="text-2xl font-black text-white tracking-tighter drop-shadow-lg">
-                            {/* RTL FIX: Flip score display to match logo positions */}
                             {match.status === 'upcoming' ? convertTo12Hour(match.startTime) : `${match.score?.away}-${match.score?.home}`}
                           </div>
                           {match.status === 'live' && (
@@ -175,8 +175,8 @@ export function MatchScheduleWidget() {
                                 toggleFavoriteTeam({ id: match.awayTeamId!, name: match.awayTeam, logo: match.awayLogo }); 
                               }}
                               className={cn(
-                                "absolute -top-1 -left-1 w-7 h-7 rounded-full border border-white/10 backdrop-blur-3xl flex items-center justify-center transition-all active:scale-90 z-30",
-                                isFavTeam(match.awayTeamId!) ? "bg-yellow-500 text-black shadow-glow" : "bg-black/60 text-white/20 hover:text-white"
+                                "absolute -top-3 -left-3 w-7 h-7 rounded-full border border-white/10 backdrop-blur-3xl flex items-center justify-center transition-all active:scale-90 z-30",
+                                isFavTeam(match.awayTeamId!) ? "bg-yellow-500 text-black shadow-glow" : "bg-black/60 text-white/40 hover:text-white"
                               )}
                             >
                               <Star className={cn("w-3.5 h-3.5", isFavTeam(match.awayTeamId!) && "fill-current")} />
