@@ -90,6 +90,7 @@ interface MediaState {
   reminders: Reminder[];
   customManuscripts: Manuscript[];
   customWallBackgrounds: string[];
+  customManuscriptColors: string[];
   mapSettings: MapSettings;
   aiSuggestions: any[];
   activeVideo: YouTubeVideo | null;
@@ -118,6 +119,8 @@ interface MediaState {
   removeManuscript: (id: string) => void;
   addCustomWallBackground: (url: string) => void;
   removeCustomWallBackground: (url: string) => void;
+  addCustomManuscriptColor: (color: string) => void;
+  removeCustomManuscriptColor: (color: string) => void;
   updatePrayerSetting: (id: string, setting: Partial<PrayerSetting>) => void;
   toggleFavoriteTeam: (team: FavoriteTeam) => void;
   toggleFavoriteLeague: (leagueId: number) => void;
@@ -192,6 +195,7 @@ export const useMediaStore = create<MediaState>()(
       reminders: [],
       customManuscripts: [],
       customWallBackgrounds: [],
+      customManuscriptColors: ['#ffffff', '#FFD700', '#C0C0C0'],
       mapSettings: { 
         zoom: 20.0, 
         tilt: 65, 
@@ -226,7 +230,8 @@ export const useMediaStore = create<MediaState>()(
           dockSide: state.dockSide,
           showIslands: state.showIslands,
           videoProgress: state.videoProgress,
-          customWallBackgrounds: state.customWallBackgrounds // CRITICAL FIX: Ensure backgrounds are saved
+          customWallBackgrounds: state.customWallBackgrounds,
+          customManuscriptColors: state.customManuscriptColors
         };
         await updateBin(JSONBIN_MASTER_BIN_ID, data);
       },
@@ -403,6 +408,19 @@ export const useMediaStore = create<MediaState>()(
         return { customWallBackgrounds: newList };
       }),
 
+      addCustomManuscriptColor: (color) => set((state) => {
+        if (state.customManuscriptColors.includes(color)) return state;
+        const newList = [...state.customManuscriptColors, color];
+        setTimeout(() => get().syncMasterBin(), 100);
+        return { customManuscriptColors: newList };
+      }),
+
+      removeCustomManuscriptColor: (color) => set((state) => {
+        const newList = state.customManuscriptColors.filter(c => c !== color);
+        setTimeout(() => get().syncMasterBin(), 100);
+        return { customManuscriptColors: newList };
+      }),
+
       updatePrayerSetting: (id, update) => set((state) => {
         const newList = state.prayerSettings.map(s => s.id === id ? { ...s, ...update } : s);
         setTimeout(() => get().syncMasterBin(), 100);
@@ -503,7 +521,8 @@ if (typeof window !== "undefined") {
           dockSide: masterData.dockSide || 'left',
           showIslands: masterData.showIslands !== undefined ? masterData.showIslands : true,
           videoProgress: masterData.videoProgress || {},
-          customWallBackgrounds: Array.isArray(masterData.customWallBackgrounds) ? masterData.customWallBackgrounds : []
+          customWallBackgrounds: Array.isArray(masterData.customWallBackgrounds) ? masterData.customWallBackgrounds : [],
+          customManuscriptColors: Array.isArray(masterData.customManuscriptColors) ? masterData.customManuscriptColors : ['#ffffff', '#FFD700', '#C0C0C0']
         });
       }
 

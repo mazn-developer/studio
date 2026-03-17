@@ -54,7 +54,6 @@ export function ReminderSummaryWidget() {
         let refTime = pData[setting.id as keyof typeof pData];
         let baseMinutesOffset = setting.offsetMinutes;
 
-        // Special Logic for Duha (Calculated 15m after Sunrise)
         if (setting.id === 'duha') {
           refTime = pData['sunrise'];
           baseMinutesOffset += 15;
@@ -67,7 +66,6 @@ export function ReminderSummaryWidget() {
         let aDiff = azanSecs - totalCurrentSecs;
         if (aDiff < -43200) aDiff += 86400;
 
-        // Azan / Duha Reminder
         if (aDiff > -600) {
           list.push({ 
             id: `azan-${setting.id}`, 
@@ -81,7 +79,6 @@ export function ReminderSummaryWidget() {
           });
         }
 
-        // Iqamah Reminder (if applicable)
         if (setting.iqamahDuration > 0) {
           const iqamahSecs = azanSecs + (setting.iqamahDuration * 60);
           let iDiff = iqamahSecs - totalCurrentSecs;
@@ -103,7 +100,6 @@ export function ReminderSummaryWidget() {
       }
     }
 
-    // Process Manual Reminders
     for (const rem of reminders) {
       let targetSecs = 0;
       if (rem.relativePrayer === 'manual' && rem.manualTime) {
@@ -143,9 +139,7 @@ export function ReminderSummaryWidget() {
       }
     }
 
-    const sorted = list.sort((a, b) => Math.abs(a.diff) - Math.abs(b.diff));
-    
-    return sorted.slice(0, 3);
+    return list.sort((a, b) => Math.abs(a.diff) - Math.abs(b.diff)).slice(0, 3);
   }, [now, prayerTimes, reminders, prayerSettings]);
 
   const formatCountdown = (diffSeconds: number) => {
@@ -155,9 +149,9 @@ export function ReminderSummaryWidget() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const GlassNumber = ({ text, size = '3.5rem', id }: { text: string, size?: string, id: string }) => (
+  const GlassNumber = ({ text, size = '4.5rem', id }: { text: string, size?: string, id: string }) => (
     <div className="relative w-[95%] h-full flex flex-col items-center justify-center mx-auto">
-      <svg className="w-full h-full overflow-visible" viewBox="0 0 250 80">
+      <svg className="w-full h-full overflow-visible" viewBox="0 0 280 80">
         <defs>
           <linearGradient id={`textFill-sum-${id}`} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
@@ -215,7 +209,7 @@ export function ReminderSummaryWidget() {
               <GlassNumber 
                 text={displayVal} 
                 id={`sum-vert-${rem.id}`} 
-                size={(idx === 0 && showCountdown) ? "4.8rem" : "3.5rem"}
+                size={(idx === 0 && showCountdown) ? "5rem" : "3.8rem"}
               />
             </div>
             
