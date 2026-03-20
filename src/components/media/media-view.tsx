@@ -214,7 +214,7 @@ export function MediaView() {
       if (videoId) {
         const video = await fetchVideoDetails(videoId);
         if (video) {
-          setActiveVideo(video);
+          setActiveVideo(video); // سياق الفيديو المنفرد
           setIsUrlDialogOpen(false);
           setUrlInput("");
         }
@@ -243,60 +243,55 @@ export function MediaView() {
 
   return (
     <div className="p-6 space-y-8 max-w-7xl mx-auto pb-32 min-h-screen relative dir-rtl safe-p-top">
-      <header className="flex flex-col gap-8">
-        <div className="flex justify-between items-end">
-          <div className="text-right">
-            <h1 className="text-4xl md:text-5xl font-headline font-bold tracking-tighter text-white">DriveCast Media</h1>
-            <p className="text-muted-foreground text-xs font-medium uppercase tracking-widest opacity-60">Professional Video Center</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button
-              variant="outline"
-              onClick={() => setIsReordering(!isReordering)}
-              className={cn("h-12 px-6 rounded-full focusable", isReordering ? "bg-accent text-black" : "bg-white/5 text-white")}
-            >
-              {isReordering ? "إلغاء الترتيب" : "تغيير الترتيب"}
-            </Button>
-            {isReordering && (
-              <Button onClick={handleSaveReorder} className="h-12 px-6 rounded-full bg-primary text-white shadow-glow">
-                <Save className="w-4 h-4 ml-2" /> حفظ الترتيب السحابي
-              </Button>
-            )}
-            <Dialog open={isUrlDialogOpen} onOpenChange={setIsUrlDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" className="h-12 px-6 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 focusable flex items-center gap-2">
-                  <LinkIcon className="w-4 h-4 text-primary" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">إضافة بالرابط</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-zinc-950 border-white/10 rounded-[2.5rem] p-8 w-[90%] max-w-md mx-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-black text-white mb-4 text-right">إضافة فيديو بالرابط</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-6">
-                  <Input 
-                    placeholder="https://youtu.be/..." 
-                    value={urlInput} 
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    className="h-14 bg-white/5 border-white/10 rounded-2xl px-6 text-white focusable text-right"
-                  />
-                  <div className="flex gap-4">
-                    <Button onClick={handleAddVideoByUrl} disabled={isAddingByUrl} className="flex-1 h-14 bg-primary text-white font-black rounded-2xl shadow-xl focusable">
-                      {isAddingByUrl ? <Loader2 className="w-6 h-6 animate-spin" /> : "إضافة الفيديو"}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-8 items-stretch">
-          <div className="w-full flex flex-col justify-end gap-6 order-2">
+      <header className="flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row gap-6 items-stretch">
+          <div className="w-full flex flex-col justify-end gap-6">
             <div className="space-y-3">
-              <div className="flex items-center gap-2 px-2">
-                <Search className="w-4 h-4 text-primary" />
-                <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">البحث الذكي</label>
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-primary" />
+                  <label className="text-[10px] font-black text-white/40 uppercase tracking-widest block">البحث الذكي</label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsReordering(!isReordering)}
+                    className={cn("h-10 px-4 rounded-full text-xs font-black focusable", isReordering ? "bg-accent text-black" : "bg-white/5 text-white")}
+                  >
+                    {isReordering ? "إلغاء الترتيب" : "تغيير الترتيب"}
+                  </Button>
+                  {isReordering && (
+                    <Button onClick={handleSaveReorder} className="h-10 px-4 rounded-full bg-primary text-white text-xs font-black shadow-glow">
+                      <Save className="w-4 h-4 ml-2" /> حفظ السحابة
+                    </Button>
+                  )}
+                  <Dialog open={isUrlDialogOpen} onOpenChange={setIsUrlDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" className="h-10 px-4 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 focusable flex items-center gap-2">
+                        <LinkIcon className="w-4 h-4 text-primary" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">إضافة بالرابط</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-zinc-950 border-white/10 rounded-[2.5rem] p-8 w-[90%] max-w-md mx-auto">
+                      <DialogHeader>
+                        <DialogTitle className="text-2xl font-black text-white mb-4 text-right">إضافة فيديو بالرابط</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-6">
+                        <Input 
+                          placeholder="https://youtu.be/..." 
+                          value={urlInput} 
+                          onChange={(e) => setUrlInput(e.target.value)}
+                          className="h-14 bg-white/5 border-white/10 rounded-2xl px-6 text-white focusable text-right"
+                        />
+                        <div className="flex gap-4">
+                          <Button onClick={handleAddVideoByUrl} disabled={isAddingByUrl} className="flex-1 h-14 bg-primary text-white font-black rounded-2xl shadow-xl focusable">
+                            {isAddingByUrl ? <Loader2 className="w-6 h-6 animate-spin" /> : "إضافة الفيديو"}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
               <div className="relative group">
                 <Search className="absolute right-6 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground group-focus-within:text-primary" />
@@ -333,7 +328,7 @@ export function MediaView() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {videoResults.map((video, idx) => (
-              <Card key={video.id} data-nav-id={`search-result-${idx}`} onClick={() => setActiveVideo(video)} className="group video-result-card relative overflow-hidden bg-white/5 border-none rounded-[2rem] transition-all hover:scale-[1.05] cursor-pointer shadow-xl focusable" tabIndex={0}>
+              <Card key={video.id} data-nav-id={`search-result-${idx}`} onClick={() => setActiveVideo(video, videoResults)} className="group video-result-card relative overflow-hidden bg-white/5 border-none rounded-[2rem] transition-all hover:scale-[1.05] cursor-pointer shadow-xl focusable" tabIndex={0}>
                 <div className="aspect-video relative overflow-hidden">
                   <Image src={video.thumbnail} alt={video.title} fill className="object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -394,7 +389,7 @@ export function MediaView() {
                   video.isLive && "ring-2 ring-red-600 bg-red-600/5"
                 )}
                 tabIndex={0}
-                onClick={() => setActiveVideo(video)}
+                onClick={() => setActiveVideo(video, channelVideos)}
               >
                 <div className="aspect-video relative overflow-hidden">
                   <Image src={video.thumbnail} alt={video.title} fill className="object-cover opacity-80" />
@@ -435,7 +430,7 @@ export function MediaView() {
                         "w-[340px] group relative overflow-hidden bg-zinc-900/80 border-none rounded-[2rem] transition-all hover:scale-[1.02] cursor-pointer shadow-xl focusable",
                         video.isLive && "ring-2 ring-red-600"
                       )}
-                      onClick={() => setActiveVideo(video)}
+                      onClick={() => setActiveVideo(video, subscriptionLatestVideos)}
                       tabIndex={0}
                       data-nav-id={`sub-latest-${idx}`}
                     >

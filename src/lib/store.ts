@@ -139,7 +139,7 @@ interface MediaState {
   prevIptvChannel: () => void;
   updateMapSettings: (settings: Partial<MapSettings>) => void;
   setAiSuggestions: (suggestions: any[]) => void;
-  setActiveVideo: (video: YouTubeVideo | null) => void;
+  setActiveVideo: (video: YouTubeVideo | null, context?: YouTubeVideo[]) => void;
   setActiveIptv: (channel: IptvChannel | null) => void;
   setActiveQuranUrl: (url: string | null) => void;
   setPlaylist: (videos: YouTubeVideo[]) => void;
@@ -454,7 +454,28 @@ export const useMediaStore = create<MediaState>()(
       }),
 
       setAiSuggestions: (suggestions) => set({ aiSuggestions: suggestions }),
-      setActiveVideo: (video) => set({ activeVideo: video, activeIptv: null, isPlaying: !!video, isMinimized: false, isFullScreen: !!video }),
+      
+      setActiveVideo: (video, context = []) => {
+        if (!video) {
+          set({ activeVideo: null, isPlaying: false, isMinimized: false, isFullScreen: false });
+          return;
+        }
+        
+        // ذكاء سياقي: إذا تم توفير سياق (مجموعة فيديوهات)، قم بإنشاء قائمة تشغيل
+        const playlist = context.length > 0 ? context : [video];
+        const index = playlist.findIndex(v => v.id === video.id);
+        
+        set({ 
+          activeVideo: video, 
+          activeIptv: null, 
+          isPlaying: true, 
+          isMinimized: false, 
+          isFullScreen: true,
+          playlist: playlist,
+          playlistIndex: index > -1 ? index : 0
+        });
+      },
+
       setActiveIptv: (channel) => {
         const state = get();
         if (!channel) {
